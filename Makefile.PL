@@ -42,6 +42,7 @@ WriteMakefile1(
         'Test::More'      => 0,
         'Test::Deep' => 0,
         'Test::FailWarnings' => 0,
+        'Test::SharedFork' => 0,
         'File::Temp' => 0,
         'File::Slurp' => 0,
     },
