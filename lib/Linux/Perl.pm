@@ -8,8 +8,6 @@ Linux::Perl - Linux system calls with pure Perl
 
 =head1 SYNOPSIS
 
-    my @uname = Linux::Perl::uname::run();
-
     my $efd = Linux::Perl::eventfd->new();
 
     #...or, if you know your architecture:
