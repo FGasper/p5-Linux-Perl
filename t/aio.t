@@ -21,6 +21,8 @@ my $arch = LP_EnsureArch::ensure_support('aio');
 my $base_class = 'Linux::Perl::aio';
 
 for my $class ( $base_class, "$base_class\::$arch" ) {
+    diag "===== $class";
+
     fork or do {
         Module::Load::load($class);
 
@@ -39,7 +41,7 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
 
                 my $buf = "\0" x 25;
 
-                my $control = $class->create_control(
+                my $control = $aio->create_control(
                     $rfh,
                     \$buf,
                     lio_opcode => 'PREAD',
@@ -80,7 +82,7 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
                 my $buf = "\0" x 25;
 
                 my $submitted = $aio->submit(
-                    $class->create_control(
+                    $aio->create_control(
                         $rfh,
                         \$buf,
                         lio_opcode    => 'PREAD',
@@ -113,14 +115,14 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
 
                 my $buf = "\0" x 25;
 
-                my $first = $class->create_control(
+                my $first = $aio->create_control(
                     $rfh,
                     \$buf,
                     lio_opcode => 'PREAD',
                     nbytes     => 6,
                 );
 
-                my $second = $class->create_control(
+                my $second = $aio->create_control(
                     $rfh2,
                     \$buf,
                     lio_opcode    => 'PREAD',
@@ -153,7 +155,7 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
 
                 my $eventfd = Linux::Perl::eventfd->new();
 
-                my $control = $class->create_control(
+                my $control = $aio->create_control(
                     $rfh,
                     \$buf,
                     lio_opcode => 'PREAD',
@@ -191,6 +193,7 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
     };
 
     wait;
+    ok( !$?, $class );
 }
 
 done_testing();

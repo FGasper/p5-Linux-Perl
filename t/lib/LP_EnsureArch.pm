@@ -14,8 +14,8 @@ sub ensure_support {
     my $arch = Linux::Perl::Constants::get_architecture_name();
 
     $supported &&= do {
-        my @path = ( 'Linux', 'Perl', $module, $arch );
-        !!grep { -e File::Spec->catfile( $_, @path ) };
+        my @path = ( 'Linux', 'Perl', $module, "$arch.pm" );
+        !!grep { -e File::Spec->catfile( $_, @path ) } @INC;
     };
 
     if (!$supported) {

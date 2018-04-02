@@ -75,6 +75,8 @@ use warnings;
 
 use Linux::Perl::X ();
 
+our $VERSION = '0.01-TRIAL1';
+
 sub call {
     local $!;
     my $ok = syscall(0 + $_[0], @_[1 .. $#_]);
