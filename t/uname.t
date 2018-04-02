@@ -4,6 +4,12 @@ use strict;
 use warnings;
 use autodie;
 
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use LP_EnsureArch;
+
+LP_EnsureArch::ensure_support('aio');
+
 use Test::More;
 use Test::SharedFork;
 

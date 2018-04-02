@@ -51,8 +51,8 @@ use constant {
 =item * C<initval> - Optional, as described in the eventfd documentation.
 Defaults to 0.
 
-=item * C<flags> - Optional, an array reference of one or both of:
-C<NONBLOCK>, C<CLOEXEC>, C<SEMAPHORE>. See the eventfd documentation for
+=item * C<flags> - Optional, an array reference of any or all of:
+C<NONBLOCK>, C<CLOEXEC>, C<SEMAPHORE>. See C<man 2 eventfd> for
 more details.
 
 =back

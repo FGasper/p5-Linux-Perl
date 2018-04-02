@@ -1,6 +1,8 @@
 
 use ExtUtils::MakeMaker;
 
+die 'OS unsupported' if $^O ne 'linux';
+
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
 WriteMakefile1(
@@ -11,6 +13,9 @@ WriteMakefile1(
                 type => 'git',
                 url => 'git://github.com/FGasper/p5-Linux-Perl.git',
                 web => 'https://github.com/FGasper/p5-Linux-Perl',
+            },
+            bugtracker => {
+                web => 'https://github.com/FGasper/p5-Linux-Perl/issues',
             },
         },
     },

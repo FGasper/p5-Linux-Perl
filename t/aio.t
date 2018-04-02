@@ -6,176 +6,191 @@ use warnings;
 use Test::More;
 use Test::Deep;
 use Test::FailWarnings;
+use Test::SharedFork;
 
 use File::Temp;
 use File::Slurp;
 use Module::Load;
 
-my $class = 'Linux::Perl::aio::x86_64';
-my $ctrl_class = 'Linux::Perl::aio::Control::x86_64';
-Module::Load::load($class);
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use LP_EnsureArch;
 
-my $aio = $class->new(1024);
-isa_ok( $aio, $class, 'return from new()' );
+my $arch = LP_EnsureArch::ensure_support('aio');
 
-#----------------------------------------------------------------------
+my $base_class = 'Linux::Perl::aio';
 
-my $dir = File::Temp::tempdir( CLEANUP => 1 );
+for my $class ( $base_class, "$base_class\::$arch" ) {
+    fork or do {
+        Module::Load::load($class);
 
-{
-    note "simple read";
+        eval {
+            my $aio = $class->new(1024);
+            isa_ok( $aio, $class, 'return from new()' );
 
-    File::Slurp::write_file( "$dir/abc", "abcdef" );
+            my $dir = File::Temp::tempdir( CLEANUP => 1 );
 
-    open my $rfh, '<', "$dir/abc";
+            {
+                note "simple read";
 
-    my $buf = "\0" x 25;
+                File::Slurp::write_file( "$dir/abc", "abcdef" );
 
-    my $control = $ctrl_class->new(
-        $rfh,
-        \$buf,
-        lio_opcode => 'PREAD',
-    );
+                open my $rfh, '<', "$dir/abc";
 
-    my $submitted = $aio->submit($control);
+                my $buf = "\0" x 25;
 
-    is( $submitted, 1, 'submit() worked' );
+                my $control = $class->create_control(
+                    $rfh,
+                    \$buf,
+                    lio_opcode => 'PREAD',
+                );
 
-    my @events = $aio->getevents( 1, 1, 10 );
+                my $submitted = $aio->submit($control);
 
-    cmp_deeply(
-        \@events,
-        [
-            superhashof( {
-               obj => $control->id(),
-            } ),
-        ],
-        'getevents() return',
-    );
+                is( $submitted, 1, 'submit() worked' );
 
-    is(
-        ${ $control->buffer_sr() },
-        'abcdef' . ( "\0" x 19 ),
-        'did read',
-    );
-}
+                my @events = $aio->getevents( 1, 1, 10 );
 
-{
-    note 'partial read';
+                cmp_deeply(
+                    \@events,
+                    [
+                        superhashof( {
+                        obj => $control->id(),
+                        } ),
+                    ],
+                    'getevents() return',
+                );
 
-    File::Slurp::write_file( "$dir/abc", "abcdef" );
+                is(
+                    ${ $control->buffer_sr() },
+                    'abcdef' . ( "\0" x 19 ),
+                    'did read',
+                );
+            }
 
-    open my $rfh, '<', "$dir/abc";
+            {
+                note 'partial read';
 
-    my $aio = $class->new(1);
+                File::Slurp::write_file( "$dir/abc", "abcdef" );
 
-    my $buf = "\0" x 25;
+                open my $rfh, '<', "$dir/abc";
 
-    my $submitted = $aio->submit(
-        $ctrl_class->new(
-            $rfh,
-            \$buf,
-            lio_opcode    => 'PREAD',
-            buffer_offset => 2,
-            nbytes        => 2,
-        ),
-    );
+                my $aio = $class->new(1);
 
-    is( $submitted, 1, 'submit() worked' );
+                my $buf = "\0" x 25;
 
-    my @events = $aio->getevents( 1, 1, 10 );
+                my $submitted = $aio->submit(
+                    $class->create_control(
+                        $rfh,
+                        \$buf,
+                        lio_opcode    => 'PREAD',
+                        buffer_offset => 2,
+                        nbytes        => 2,
+                    ),
+                );
 
-    is(
-        $buf,
-        "\0\0" . 'ab' . ( "\0" x 21 ),
-        'did read',
-    ) or diag explain sprintf "%v.02x", $buf;
-}
+                is( $submitted, 1, 'submit() worked' );
 
-{
-    note 'multi read';
+                my @events = $aio->getevents( 1, 1, 10 );
 
-    File::Slurp::write_file( "$dir/abc", "abcdef" );
-    File::Slurp::write_file( "$dir/123", "123456789" );
+                is(
+                    $buf,
+                    "\0\0" . 'ab' . ( "\0" x 21 ),
+                    'did read',
+                ) or diag explain sprintf "%v.02x", $buf;
+            }
 
-    open my $rfh,  '<', "$dir/abc";
-    open my $rfh2, '<', "$dir/123";
+            {
+                note 'multi read';
 
-    my $aio = $class->new(10);
+                File::Slurp::write_file( "$dir/abc", "abcdef" );
+                File::Slurp::write_file( "$dir/123", "123456789" );
 
-    my $buf = "\0" x 25;
+                open my $rfh,  '<', "$dir/abc";
+                open my $rfh2, '<', "$dir/123";
 
-    my $first = $ctrl_class->new(
-        $rfh,
-        \$buf,
-        lio_opcode => 'PREAD',
-        nbytes     => 6,
-    );
+                my $aio = $class->new(10);
 
-    my $second = $ctrl_class->new(
-        $rfh2,
-        \$buf,
-        lio_opcode    => 'PREAD',
-        buffer_offset => 6,
-    );
+                my $buf = "\0" x 25;
 
-    my $submitted = $aio->submit( $first, $second );
+                my $first = $class->create_control(
+                    $rfh,
+                    \$buf,
+                    lio_opcode => 'PREAD',
+                    nbytes     => 6,
+                );
 
-    is( $submitted, 2, 'submit() worked' );
+                my $second = $class->create_control(
+                    $rfh2,
+                    \$buf,
+                    lio_opcode    => 'PREAD',
+                    buffer_offset => 6,
+                );
 
-    my @events = $aio->getevents( 2, 2, 10 );
+                my $submitted = $aio->submit( $first, $second );
 
-    is(
-        $buf,
-        'abcdef123456789' . ( "\0" x 10 ),
-        'did read',
-    );
-}
+                is( $submitted, 2, 'submit() worked' );
 
-{
-    note 'eventfd';
+                my @events = $aio->getevents( 2, 2, 10 );
 
-    require Linux::Perl::eventfd;
+                is(
+                    $buf,
+                    'abcdef123456789' . ( "\0" x 10 ),
+                    'did read',
+                );
+            }
 
-    File::Slurp::write_file( "$dir/abc", "abcdef" );
+            {
+                note 'eventfd';
 
-    open my $rfh, '<', "$dir/abc";
+                require Linux::Perl::eventfd;
 
-    my $buf = "\0" x 25;
+                File::Slurp::write_file( "$dir/abc", "abcdef" );
 
-    my $eventfd = Linux::Perl::eventfd->new();
+                open my $rfh, '<', "$dir/abc";
 
-    my $control = $ctrl_class->new(
-        $rfh,
-        \$buf,
-        lio_opcode => 'PREAD',
-        eventfd => $eventfd->fileno(),
-        rw_flags => ['HIPRI'],
-    );
+                my $buf = "\0" x 25;
 
-    my $submitted = $aio->submit($control);
+                my $eventfd = Linux::Perl::eventfd->new();
 
-    is( $submitted, 1, 'submit() worked' );
+                my $control = $class->create_control(
+                    $rfh,
+                    \$buf,
+                    lio_opcode => 'PREAD',
+                    eventfd => $eventfd->fileno(),
+                    rw_flags => ['HIPRI'],
+                );
 
-    my $efd_read = $eventfd->read();
+                my $submitted = $aio->submit($control);
 
-    my @events = $aio->getevents( 1, 1, 0 );
+                is( $submitted, 1, 'submit() worked' );
 
-    cmp_deeply(
-        \@events,
-        [
-            superhashof( {
-               obj => $control->id(),
-            } ),
-        ],
-        'getevents() return',
-    );
+                my $efd_read = $eventfd->read();
 
-    is(
-        ${ $control->buffer_sr() },
-        'abcdef' . ( "\0" x 19 ),
-        'did read',
-    );
+                my @events = $aio->getevents( 1, 1, 0 );
+
+                cmp_deeply(
+                    \@events,
+                    [
+                        superhashof( {
+                        obj => $control->id(),
+                        } ),
+                    ],
+                    'getevents() return',
+                );
+
+                is(
+                    ${ $control->buffer_sr() },
+                    'abcdef' . ( "\0" x 19 ),
+                    'did read',
+                );
+            }
+        };
+        die if $@;
+        exit;
+    };
+
+    wait;
 }
 
 done_testing();

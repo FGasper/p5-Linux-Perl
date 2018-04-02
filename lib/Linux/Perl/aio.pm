@@ -32,6 +32,10 @@ This module provides support for the kernel-level AIO interface.
 DESTROY handlers are provided for automatic reaping of unused
 instances/contexts.
 
+This module is EXPERIMENTAL. For now only the C<x86_64> architecture
+is supported; others may follow, though 32-bit architectures would
+take a bit more work.
+
 =cut
 
 use strict;
@@ -56,6 +60,11 @@ sub new {
 
     die "Need number of events!" if !$nr_events;
 
+    if (!$class->can('NR_io_setup')) {
+        require Linux::Perl::ArchLoader;
+        $class = Linux::Perl::ArchLoader::get_arch_module($class);
+    }
+
     my $context = pack $class->_context_template();
 
     Linux::Perl::call( $class->NR_io_setup(), 0 + $nr_events, $context );
@@ -63,6 +72,57 @@ sub new {
     $context = $class->unpack_context($context);
 
     return bless \$context, $class;
+}
+
+=head2 I<CLASS>->create_control( FILEHANDLE, BUFFER_SR, %OPTS )
+
+Returns an instance of the relevant L<Linux::Perl::aio::Control>
+subclass for your architecture.
+
+FILEHANDLE is a Perl filehandle object, and BUFFER_SR is a reference
+to the buffer string. This buffer must be pre-initialized to at least
+the needed/desired length.
+
+%OPTS is:
+
+=over
+
+=item * C<lio_opcode>: Required, one of: C<PREAD>, C<PWRITE>, C<FSYNC>,
+C<FDSYNC>, C<NOOP>, C<PREADV>, C<PWRITEV>.
+
+=item * C<buffer_offset>: The byte offset in BUFFER_SR at which to start
+the I/O operation. Defaults to 0.
+
+=item * C<nbytes>: The number of bytes on which to operate. This value
+plus C<buffer_offset> must be less than the length of BUFFER_SR. Defaults
+to length(BUFFER_SR) minus C<buffer_offset>.
+
+=item * C<rw_flags>: Optional, an array reference of any or all of: C<HIPRI>,
+C<DSYNC>, C<SYNC>, C<NOWAIT>, C<APPEND>. Not supported in all kernel versions.
+See the kernel documentation (e.g., C<RWF_HIPRI>) for details on
+what these flags mean and whether your system supports them.
+
+=item * C<reqprio>: Optional. See the kernel’s documentation.
+
+=item * C<eventfd>: Optional, an eventfd file descriptor
+(i.e., unsigned integer) to receive updates when aio events are finished.
+(See L<Linux::Perl::eventfd> for one way of making this work.)
+
+=back
+
+For more information, consult the definition and documentation
+for struct C<iocb>. (cf. F<include/linux/aio_abi.h>)
+
+=cut
+
+sub create_control {
+    my $class = shift;
+
+    my $rcolon = rindex($class, ':');
+
+    substr($class, $rcolon - 1, 0) = '::Control';
+
+    return $class->(@_);
 }
 
 =head2 $num = I<OBJ>->submit( CTRL1, CTRL2, .. )
@@ -111,6 +171,7 @@ values as in the kernel C<io_event> struct:
 sub getevents {
     my ( $self, $min_events, $max_events, $timeout ) = @_;
 
+    #If they only asked for one, then allow scalar context.
     if ($max_events > 1) {
         require Call::Context;
         Call::Context::must_be_list();
@@ -139,7 +200,7 @@ sub getevents {
         push @events, \%event;
     }
 
-    return @events;
+    return wantarray ? @events : $events[0];
 }
 
 sub DESTROY {
@@ -174,6 +235,9 @@ Linux::Perl::aio::Control
 
 This class encapsulates a kernel C<iocb> struct, i.e., an I/O request.
 
+You should not instantiate it directly; instead, use
+L<Linux::Perl::aio>’s C<create_control()> method.
+
 =cut
 
 use constant {
@@ -203,45 +267,8 @@ use constant {
 
 =head2 I<CLASS>->new( FILEHANDLE, BUFFER_SR, %OPTS )
 
-FILEHANDLE is a Perl filehandle object, and BUFFER_SR is a reference
-to the buffer string. This buffer must be pre-initialized to at least
-the needed/desired length.
-
-%OPTS is:
-
-=over
-
-=item * C<lio_opcode>: Required, one of: C<PREAD>, C<PWRITE>, C<FSYNC>,
-C<FDSYNC>, C<NOOP>, C<PREADV>, C<PWRITEV>.
-
-=item * C<buffer_offset>: The byte offset in BUFFER_SR at which to start
-the I/O operation. Defaults to 0.
-
-=item * C<nbytes>: The number of bytes on which to operate. This value
-plus C<buffer_offset> must be less than the length of BUFFER_SR. Defaults
-to length(BUFFER_SR) minus C<buffer_offset>.
-
-=item C<rw_flags>: Not supported in all kernel versions. Optional, an array
-reference of any or all of: C<HIPRI>, C<DSYNC>, C<SYNC>, C<NOWAIT>,
-C<APPEND>. See the kernel documentation (e.g., C<RWF_HIPRI>) for details on
-what these flags mean and whether your system supports 
-
-=item * C<eventfd>: Optional, an eventfd file descriptor
-(i.e., unsigned integer).
-
-=back
-
-For more information, consult the definition and documentation
-for struct C<iocb>. (cf. F<include/linux/aio_abi.h>)
-
 =cut
 
-#rw_flags - HIPRI, DSYNC, SYNC, NOWAIT … and maybe APPEND?
-#lio_opcode - PREAD, PWRITE, FSYNC, FDSYNC, NOOP, PREADV, PWRITEV
-#reqprio
-#offset
-#flags - RESFD
-#resfd - filehandle
 sub new {
     my ( $class, $fh, $buf_sr, %args ) = @_;
 
@@ -259,6 +286,7 @@ sub new {
     $opts{'lio_opcode'} = 0 + $opcode_cr->();
     $opts{'fildes'}     = fileno $fh;
     $opts{'reserved2'} = 0;
+    $opts{'reqprio'} = $args{'reqprio'};
 
     if ($args{'rw_flags'}) {
         my $flag = 0;
@@ -305,9 +333,27 @@ sub new {
     return bless [ \$packed, $buf_sr, $ptr, $class->unpack_pointer($ptr) ], $class;
 }
 
+=head2 $sref = I<OBJ>->buffer_sr()
+
+Returns the string buffer reference given originally to C<new()>.
+
+=cut
+
 sub buffer_sr { return $_[0][1] }
 
+=head2 $sref = I<OBJ>->pointer()
+
+Returns the internal C<iocb>’s memory address as an octet string.
+
+=cut
+
 sub pointer { return $_[0][2] }
+
+=head2 $sref = I<OBJ>->id()
+
+Returns the internal C<iocb>’s ID.
+
+=cut
 
 sub id { return $_[0][3] }
 

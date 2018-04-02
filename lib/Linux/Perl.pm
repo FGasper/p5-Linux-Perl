@@ -27,15 +27,20 @@ a concern than minimizing memory usage.
 
 =head1 MODULES
 
-Each family of system calls lives in its own namespace under Linux::Perl:
+Each family of system calls lives in its own namespace under C<Linux::Perl>:
 
 =over
 
 =item * L<Linux::Perl::eventfd>
 
+=item * L<Linux::Perl::aio>
+
 =item * L<Linux::Perl::uname>
 
 =back
+
+The distribution contains a number of other modules, none of which is
+intended for outside use.
 
 =head1 PLATFORM-SPECIFIC INVOCATION
 
@@ -61,18 +66,20 @@ The following platforms are supported:
 
 =back
 
-Support for adding new platforms is trivial; just send a pull request.
+Support for adding new platforms is usually trivial; just send a pull request.
 
 =cut
 
 use strict;
 use warnings;
 
+use Linux::Perl::X ();
+
 sub call {
     local $!;
     my $ok = syscall(0 + $_[0], @_[1 .. $#_]);
     if ($ok == -1) {
-        die "X: $!";    #XXX TODO
+        die Linux::Perl::X->create('Call', $_[0], $!);
     }
 
     return $ok;
