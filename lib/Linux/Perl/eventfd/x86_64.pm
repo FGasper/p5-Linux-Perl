@@ -12,7 +12,4 @@ use constant {
     flag_SEMAPHORE => 1,
 };
 
-*flag_CLOEXEC = *Linux::Perl::Constants::x86_64::flag_CLOEXEC;
-*flag_NONBLOCK = *Linux::Perl::Constants::x86_64::flag_NONBLOCK;
-
 1;

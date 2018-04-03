@@ -8,7 +8,7 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use LP_EnsureArch;
 
-LP_EnsureArch::ensure_support('aio');
+LP_EnsureArch::ensure_support('uname');
 
 use Test::More;
 use Test::SharedFork;

@@ -1,4 +1,4 @@
-package Linux::Perl::Constants::x86_64;
+package Linux::Perl::Constants::Fcntl;
 
 use strict;
 use warnings;
