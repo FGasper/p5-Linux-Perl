@@ -40,7 +40,7 @@ for my $generic_yn ( 0, 1 ) {
 sub _do_tests {
     my ($class) = @_;
 
-    diag "$class (PID $$)";
+    note "$class (PID $$)";
 
     my @resp = $class->uname();
 

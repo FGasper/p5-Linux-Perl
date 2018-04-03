@@ -21,7 +21,7 @@ my $arch = LP_EnsureArch::ensure_support('aio');
 my $base_class = 'Linux::Perl::aio';
 
 for my $class ( $base_class, "$base_class\::$arch" ) {
-    diag "===== $class";
+    note "===== $class";
 
     fork or do {
         Module::Load::load($class);
