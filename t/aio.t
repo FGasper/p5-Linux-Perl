@@ -160,7 +160,9 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
                     \$buf,
                     lio_opcode => 'PREAD',
                     eventfd => $eventfd->fileno(),
-                    rw_flags => ['HIPRI'],
+
+                    #Unsupported on too many kernels.
+                    #rw_flags => ['HIPRI'],
                 );
 
                 my $submitted = $aio->submit($control);

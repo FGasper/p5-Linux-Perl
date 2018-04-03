@@ -62,6 +62,9 @@ The following platforms are supported:
 
 =item * x86_64 (i.e., 64-bit Intel/AMD)
 
+This is probably the only platform that will foreseeably receive substantial
+testing during development.
+
 =item * i386 (32-bit Intel/AMD)
 
 =back

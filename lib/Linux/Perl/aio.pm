@@ -98,7 +98,8 @@ plus C<buffer_offset> must be less than the length of BUFFER_SR. Defaults
 to length(BUFFER_SR) minus C<buffer_offset>.
 
 =item * C<rw_flags>: Optional, an array reference of any or all of: C<HIPRI>,
-C<DSYNC>, C<SYNC>, C<NOWAIT>, C<APPEND>. Not supported in all kernel versions.
+C<DSYNC>, C<SYNC>, C<NOWAIT>, C<APPEND>. Not supported in all kernel versions;
+in fact, support seems more the exception than the rule!
 See the kernel documentation (e.g., C<RWF_HIPRI>) for details on
 what these flags mean and whether your system supports them.
 
