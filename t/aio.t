@@ -245,4 +245,4 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
     ok( !$?, $class );
 }
 
-done_testing();
+done_testing() if $arch;

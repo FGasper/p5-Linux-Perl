@@ -113,4 +113,4 @@ sub _do_tests {
     return;
 }
 
-done_testing();
+done_testing() if $arch;
