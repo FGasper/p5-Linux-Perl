@@ -8,14 +8,14 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use LP_EnsureArch;
 
-LP_EnsureArch::ensure_support('uname');
+my $supported_yn = LP_EnsureArch::ensure_support('uname');
 
 use Test::More;
 use Test::SharedFork;
 
 use Linux::Perl::uname;
 
-plan tests => 3 * 2;
+plan $supported_yn ? ( tests => 3 * 2 ) : 'skip_all';
 
 for my $generic_yn ( 0, 1 ) {
     if ( my $pid = fork ) {

@@ -39,10 +39,11 @@ sub ensure_support {
                 diag sprintf("Need call: $call (%d)", Linux::Seccomp::syscall_resolve_name($call));
             }
         };
+        warn if $@;
 
         diag "Unsupported OS/architecture for “$module”: $^O/$arch";
-        done_testing();
-        exit;
+
+        return undef;
     }
 
     return $arch;
