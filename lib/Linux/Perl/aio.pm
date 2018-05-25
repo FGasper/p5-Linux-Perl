@@ -131,13 +131,8 @@ for struct C<iocb>. (cf. F<include/linux/aio_abi.h>)
 
 sub create_control {
     my $self = shift;
-    my $class = ref $self;
 
-    my $rcolon = rindex($class, ':');
-
-    substr($class, $rcolon - 1, 0) = '::Control';
-
-    return $class->new(@_);
+    return Linux::Perl::aio::Control->new(@_);
 }
 
 =head2 $num = I<OBJ>->submit( CTRL1, CTRL2, .. )
