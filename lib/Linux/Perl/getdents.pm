@@ -141,9 +141,9 @@ sub getdents {
 
     my $bytes = Linux::Perl::call(
         0 + $class->NR_getdents64(),
-        $fileno,
+        0 + $fileno,
         $buf,
-        $bufsize,
+        0 + $bufsize,
     );
 
     my @structs;
