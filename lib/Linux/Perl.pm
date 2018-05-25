@@ -35,6 +35,8 @@ Each family of system calls lives in its own namespace under C<Linux::Perl>:
 
 =item * L<Linux::Perl::uname>
 
+=item * L<Linux::Perl::getdents>
+
 =back
 
 The distribution contains a number of other modules, none of which is
@@ -67,7 +69,8 @@ testing during development.
 
 =back
 
-Support for adding new platforms is usually trivial; just send a pull request.
+Support for adding new platforms just involves adding new modules with the
+necessary constants to the distribution.
 
 =cut
 
