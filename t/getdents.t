@@ -45,7 +45,7 @@ sub _do_tests {
 
     note "$class (PID $$)";
 
-    ( undef, my $dir ) = File::Temp::tempdir( CLEANUP => 1);
+    my $dir = File::Temp::tempdir( CLEANUP => 1);
 
     do { open my $fh, '>', "$dir/foo" };
     do { open my $fh, '>', "$dir/bar" };
@@ -53,7 +53,6 @@ sub _do_tests {
 
     opendir( my $dh, $dir );
     my @nodes = readdir $dh;
-    die "readdir($dir): $!" if $!;
     rewinddir $dh;
 
     my @dents = $class->getdents($dh, 32768);
