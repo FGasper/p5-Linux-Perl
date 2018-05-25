@@ -45,7 +45,11 @@ sub _do_tests {
 
     note "$class (PID $$)";
 
-    my $dir = '/';
+    ( undef, my $dir ) = File::Temp::tempdir( CLEANUP => 1);
+
+    do { open my $fh, '>', "$dir/foo" };
+    do { open my $fh, '>', "$dir/bar" };
+    do { open my $fh, '>', "$dir/baz" };
 
     opendir( my $dh, $dir );
     my @nodes = readdir $dh;

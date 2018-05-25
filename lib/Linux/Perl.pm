@@ -62,12 +62,11 @@ The following platforms are supported:
 
 =item * x86_64 (i.e., 64-bit Intel/AMD)
 
-This is probably the only platform that will foreseeably receive substantial
-testing during development.
-
-=item * i386 (32-bit Intel/AMD)
+=item * arm (e.g., Raspberry Pi)
 
 =back
+
+Note that a 64-bit Perl is assumed/required.
 
 Support for adding new platforms just involves adding new modules with the
 necessary constants to the distribution.
