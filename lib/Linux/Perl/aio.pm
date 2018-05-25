@@ -56,7 +56,7 @@ BEGIN {
     );
 
     ($io_event_keys_ar, $io_event_pack) = Linux::Perl::EasyPack::split_pack_list(@_io_event_src);
-    $io_event_size = pack $io_event_pack;
+    $io_event_size = length pack $io_event_pack;
 }
 
 =head1 METHODS
