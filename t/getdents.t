@@ -45,10 +45,12 @@ sub _do_tests {
 
     note "$class (PID $$)";
 
-    opendir my $dh, '.';
+    my $dir = '/';
+
+    opendir( my $dh, $dir );
     my @nodes = readdir $dh;
-    die "readdir(.): $!" if $!;
-    rewinddir $dh or die "rewinddir(.): $!";
+    die "readdir($dir): $!" if $!;
+    rewinddir $dh;
 
     my @dents = $class->getdents($dh, 32768);
 
