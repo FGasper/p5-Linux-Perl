@@ -10,6 +10,8 @@ use LP_EnsureArch;
 
 LP_EnsureArch::ensure_support('getdents');
 
+use File::Temp;
+
 use Test::Deep;
 use Test::More;
 use Test::SharedFork;
@@ -46,6 +48,7 @@ sub _do_tests {
     note "$class (PID $$)";
 
     my $dir = File::Temp::tempdir( CLEANUP => 1);
+    diag "Using temporary directory: “$dir”";
 
     do { open my $fh, '>', "$dir/foo" };
     do { open my $fh, '>', "$dir/bar" };

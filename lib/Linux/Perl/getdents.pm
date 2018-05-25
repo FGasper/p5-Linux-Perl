@@ -116,7 +116,18 @@ sub getdents {
 
     my $buf = "\0" x $bufsize;
 
-    my $bytes = Linux::Perl::call( 0 + $class->NR_getdents64(), fileno($fh), $buf, $bufsize );
+    my $fileno = fileno($fh);
+    if (!defined $fileno) {
+        die "Filehandle ($fh) has no underlying file descriptor!";
+    }
+
+    my $bytes = Linux::Perl::call(
+        0 + $class->NR_getdents64(),
+        $fileno,
+        $buf,
+        $bufsize,
+    );
+
     my @structs;
     while ($bytes > 0) {
         my %struct;
