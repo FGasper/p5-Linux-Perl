@@ -41,10 +41,23 @@ take a bit more work.
 use strict;
 use warnings;
 
-use Linux::Perl ();
-use Linux::Perl::TimeSpec ();
+use Linux::Perl;
+use Linux::Perl::EasyPack;
+use Linux::Perl::TimeSpec;
 
-use constant io_event_sizeof => 32;    #4 x uint64_t
+my ($io_event_keys_ar, $io_event_pack, $io_event_size);
+
+BEGIN {
+    my @_io_event_src = (
+        data => 'Q',
+        obj  => 'Q',
+        res  => 'q',
+        res2 => 'q',
+    );
+
+    ($io_event_keys_ar, $io_event_pack) = Linux::Perl::EasyPack::split_pack_list(@_io_event_src);
+    $io_event_size = pack $io_event_pack;
+}
 
 =head1 METHODS
 
@@ -69,7 +82,7 @@ sub new {
 
     Linux::Perl::call( $class->NR_io_setup(), 0 + $nr_events, $context );
 
-    $context = $class->unpack_context($context);
+    $context = unpack 'Q', $context;
 
     return bless \$context, $class;
 }
@@ -183,7 +196,7 @@ sub getevents {
         die '$max_events must be >0!';
     }
 
-    my $buf = "\0" x ( $max_events * io_event_sizeof() );
+    my $buf = "\0" x ( $max_events * $io_event_size );
 
     my $evts = Linux::Perl::call(
         $self->NR_io_getevents(),
@@ -196,9 +209,9 @@ sub getevents {
 
     my @events;
     for my $idx ( 0 .. ( $evts - 1 ) ) {
-        my @data = unpack $self->io_event_pack(), substr( $buf, $idx * io_event_sizeof(), io_event_sizeof() );
+        my @data = unpack $io_event_pack, substr( $buf, $idx * $io_event_size, $io_event_size );
         my %event;
-        @event{ $self->io_event_keys() } = @data;
+        @event{ @$io_event_keys_ar } = @data;
         push @events, \%event;
     }
 
@@ -216,6 +229,9 @@ sub DESTROY {
 #----------------------------------------------------------------------
 
 package Linux::Perl::aio::Control;
+
+use Linux::Perl::EasyPack;
+use Linux::Perl::Endian;
 
 =encoding utf-8
 
@@ -265,6 +281,47 @@ use constant {
     _IOCB_FLAG_RESFD => 1,
 };
 
+my ($iocb_keys_ar, $iocb_pack);
+
+BEGIN {
+    my @_iocb_src = (
+        data => 'Q',    #aio_data
+
+        (
+            Linux::Perl::Endian::SYSTEM_IS_BIG_ENDIAN()
+            ? (
+                rw_flags => 'L',
+                key => 'L',
+            )
+            : (
+                key => 'L',
+                rw_flags => 'L',
+            )
+        ),
+
+        lio_opcode => 'S',
+        reqprio    => 's',
+        fildes     => 'L',
+
+        #Would be a P, but we grab the P and do some byte arithmetic on it
+        #for the case of a buffer_offset.
+        buf => 'Q',
+
+        nbytes => 'Q',
+
+        offset => 'q',
+
+        reserved2 => 'x8',
+
+        flags => 'L',
+        resfd => 'L',
+    );
+
+    ($iocb_keys_ar, $iocb_pack) = Linux::Perl::EasyPack::split_pack_list(@_iocb_src);
+}
+
+my $pointer_unpack = (4 == length pack 'P') ? 'L' : 'Q';
+
 =head1 METHODS
 
 =head2 I<CLASS>->new( FILEHANDLE, BUFFER_SR, %OPTS )
@@ -307,7 +364,7 @@ sub new {
         $opts{'resfd'} = $args{'eventfd'};
     }
 
-    my $buf_ptr = $class->unpack_pointer( pack 'P', $$buf_sr );
+    my $buf_ptr = unpack $pointer_unpack, pack( 'P', $$buf_sr );
 
     my $buffer_offset = $opts{'buffer_offset'} || 0;
 
@@ -326,13 +383,13 @@ sub new {
 
     $opts{'buf'} = $buf_ptr;
 
-    $_ ||= 0 for @opts{ $class->iocb_keys() };
+    $_ ||= 0 for @opts{ @$iocb_keys_ar };
 
-    my $packed = pack $class->iocb_pack(), @opts{ $class->iocb_keys() };
+    my $packed = pack $iocb_pack, @opts{ @$iocb_keys_ar };
     my $ptr = pack 'P', $packed;
 
     #We need $packed not to be garbage-collected.
-    return bless [ \$packed, $buf_sr, $ptr, $class->unpack_pointer($ptr) ], $class;
+    return bless [ \$packed, $buf_sr, $ptr, unpack( $pointer_unpack, $ptr) ], $class;
 }
 
 =head2 $sref = I<OBJ>->buffer_sr()
