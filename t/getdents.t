@@ -66,7 +66,7 @@ sub _do_tests {
             my $dest = eval { readlink "/proc/$$/fd/$node" };
             next if !$dest;
             if ($dest eq $dir) {
-                $dh_or_fd = $dest;
+                $dh_or_fd = $node;
             }
         }
 
