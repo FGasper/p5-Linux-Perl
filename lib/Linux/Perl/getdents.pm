@@ -88,11 +88,17 @@ BEGIN {
 In addition to the following, this module exposes the constants
 C<DT_UNKNOWN()> et al. (cf. C<man 2 getdents>)
 
-=head2 @ENTRIES = I<CLASS>->getdents( $FILEHANDLE, $READ_SIZE )
+=head2 @ENTRIES = I<CLASS>->getdents( $FILEHANDLE_OR_FD, $READ_SIZE )
 
-Reads from the given $FILEHANDLE using a buffer of $READ_SIZE bytes.
+Reads from the given $FILEHANDLE_OR_FD using a buffer of $READ_SIZE bytes.
 There’s no good way to know how many @ENTRIES you can get given the
 $READ_SIZE, unfortunately.
+
+Note that Perl 5.20 and earlier doesn’t do C<fileno()> on a directory handle,
+so to use this function you’ll need to pass the file descriptor rather than
+the handle. (To get the file descriptor, you can parse F</proc/$$/fd> for the
+symlink that refers to the directory’s path. See this module’s tests for
+an implementation of this.)
 
 The return is a list of hash references; each hash contains the keys
 C<ino>, C<off>, C<type>, and C<name>. These correspond with the relevant
@@ -105,7 +111,7 @@ For now, this is implemented via the C<getdents64> system call.
 =cut
 
 sub getdents {
-    my ($class, $fh, $bufsize) = @_;
+    my ($class, $fh_or_fileno, $bufsize) = @_;
 
     Call::Context::must_be_list();
 
@@ -116,9 +122,21 @@ sub getdents {
 
     my $buf = "\0" x $bufsize;
 
-    my $fileno = fileno($fh);
-    if (!defined $fileno) {
-        die "Filehandle ($fh) has no underlying file descriptor!";
+    my $fileno;
+
+    if ( ref $fh_or_fileno ) {
+        $fileno = fileno($fh_or_fileno);
+
+        if (!defined $fileno) {
+            die "Filehandle ($fh_or_fileno) has no underlying file descriptor!";
+        }
+    }
+    else {
+        $fileno = $fh_or_fileno;
+
+        if (!defined $fileno) {
+            die "Neither a filehandle nor a file descriptor was given!";
+        }
     }
 
     my $bytes = Linux::Perl::call(

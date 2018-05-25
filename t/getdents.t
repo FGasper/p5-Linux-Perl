@@ -54,13 +54,32 @@ sub _do_tests {
     do { open my $fh, '>', "$dir/bar" };
     do { open my $fh, '>', "$dir/baz" };
 
-    opendir( my $dh, $dir ) or die "opendir($dir): $!";
-    diag "fileno: " . fileno($dh);
+    opendir( my $dh, $dir );
     my @nodes = readdir $dh;
     rewinddir $dh;
 
-    diag "fileno after rewind: " . fileno($dh);
-    my @dents = $class->getdents($dh, 32768);
+    my $dh_or_fd;
+
+    if ($^V < 5.22.0) {
+        opendir my $pdh, "/proc/$$/fd";
+        while ( my $node = readdir $pdh ) {
+            my $dest = eval { readlink "/proc/$$/fd/$node" };
+            next if !$dest;
+            if ($dest eq $dir) {
+                $dh_or_fd = $dest;
+            }
+        }
+
+        if (!defined $dh_or_fd) {
+            diag scalar `ls -la /proc/$$/fd`;
+            die "Failed to find $dir’s file descriptor via /proc/$$/fd!";
+        }
+    }
+    else {
+        $dh_or_fd = $dh;
+    }
+
+    my @dents = $class->getdents($dh_or_fd, 32768);
 
     cmp_deeply(
         \@dents,
