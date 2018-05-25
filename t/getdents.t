@@ -54,10 +54,12 @@ sub _do_tests {
     do { open my $fh, '>', "$dir/bar" };
     do { open my $fh, '>', "$dir/baz" };
 
-    opendir( my $dh, $dir );
+    opendir( my $dh, $dir ) or die "opendir($dir): $!";
+    diag "fileno: " . fileno($dh);
     my @nodes = readdir $dh;
     rewinddir $dh;
 
+    diag "fileno after rewind: " . fileno($dh);
     my @dents = $class->getdents($dh, 32768);
 
     cmp_deeply(
