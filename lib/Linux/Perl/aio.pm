@@ -78,7 +78,7 @@ sub new {
         $class = Linux::Perl::ArchLoader::get_arch_module($class);
     }
 
-    my $context = pack $class->_context_template();
+    my $context = pack 'Q';
 
     Linux::Perl::call( $class->NR_io_setup(), 0 + $nr_events, $context );
 
