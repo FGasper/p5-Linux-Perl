@@ -15,18 +15,17 @@ Linux:Perl::getdents - read full directory information
 
 =head1 DESCRIPTION
 
-This module provides support for the kernel-level C<getdents>, which is the
-system call that underlies Perl’s C<readdir()> function. While C<readdir()>
-only gives back the node names, though, C<getdents> actually exposes file
-type and inode number as well. So by calling this logic directly, you can avoid
-the need to C<stat()> separately to grab this information.
+This module provides support for the kernel-level logic to read directories.
+
+Directories store more than just the node names that Perl’s C<readdir()>
+returns; for example, they store the file type and node number. By calling
+the kernel’s C<getdents> logic directly, you can get this
+information without making additional system calls.
 
 =cut
 
 use strict;
 use warnings;
-
-use Call::Context;
 
 use Linux::Perl;
 use Linux::Perl::Endian;
@@ -44,34 +43,8 @@ use constant {
     DT_WHT => 14,
 };
 
-#use constant _FILE_TYPE => (
-#    'UNKNOWN', # 0
-#    'FIFO',    # 1
-#    'CHR',     # 2
-#    undef,
-#    'DIR',     # 4
-#    undef,
-#    'BLK',     # 6
-#    undef,
-#    'REG',     # 8
-#    undef,
-#    'LNK',     # 10
-#    undef,
-#    'SOCK',    # 12
-#    undef,
-#    'WHT',     # 14
-#);
-
-#my ($lde_keys, $lde_pack, $lde_start_size);
 my ($lde64_keys, $lde64_pack, $lde64_start_size);
 BEGIN {
-#    ($lde_keys, $lde_pack) = Linux::Perl::EasyPack::split_pack_list(
-#        ino => 'L!',
-#        off => 'L!',
-#        reclen => 'S!',
-#    );
-#    $lde_start_size = length pack $lde_pack;
-
     ($lde64_keys, $lde64_pack) = Linux::Perl::EasyPack::split_pack_list(
         ino => 'Q', #ino64_t
         off => 'Q', #off64_t
@@ -91,29 +64,28 @@ C<DT_UNKNOWN()> et al. (cf. C<man 2 getdents>)
 =head2 @ENTRIES = I<CLASS>->getdents( $FILEHANDLE_OR_FD, $READ_SIZE )
 
 Reads from the given $FILEHANDLE_OR_FD using a buffer of $READ_SIZE bytes.
-There’s no good way to know how many @ENTRIES you can get given the
+There’s no good way to know how many @ENTRIES you can receive given the
 $READ_SIZE, unfortunately.
-
-Note that Perl 5.20 and earlier doesn’t do C<fileno()> on a directory handle,
-so to use this function you’ll need to pass the file descriptor rather than
-the handle. (To get the file descriptor, you can parse F</proc/$$/fd> for the
-symlink that refers to the directory’s path. See this module’s tests for
-an implementation of this.)
 
 The return is a list of hash references; each hash contains the keys
 C<ino>, C<off>, C<type>, and C<name>. These correspond with the relevant
 parts of struct C<linux_dirent64> (cf. C<man 2 getdents>).
 
+(In scalar context, this returns the number of hash references that would
+be returned in list context.)
+
 For now, this is implemented via the C<getdents64> system call.
 
-=back
+B<NOTE:> Perl 5.20 and earlier doesn’t understand C<fileno()> on a directory
+handle, so to use this function you’ll need to pass the file descriptor rather
+than the handle. (To get the file descriptor, you can parse F</proc/$$/fd>
+for the symlink that refers to the directory’s path. See this module’s tests
+for an implementation of this.)
 
 =cut
 
 sub getdents {
     my ($class, $fh_or_fileno, $bufsize) = @_;
-
-    Call::Context::must_be_list();
 
     if (!$class->can('NR_getdents64')) {
         require Linux::Perl::ArchLoader;
@@ -160,34 +132,5 @@ sub getdents {
 
     return @structs;
 }
-
-#sub _getdents {
-#    my ($class, $fh, $bufsize) = @_;
-#    print STDERR "herhhere\n";
-#
-#    Call::Context::must_be_list();
-#
-#    if (!$class->can('NR_getdents')) {
-#        require Linux::Perl::ArchLoader;
-#        $class = Linux::Perl::ArchLoader::get_arch_module($class);
-#    }
-#
-#    my $buf = "\0" x $bufsize;
-#
-#    stat "=======";
-#    my $bytes = Linux::Perl::call( 0 + $class->NR_getdents(), fileno($fh), $buf, $bufsize );
-#    printf "$bytes bytes: %v.02x\n", substr($buf, 0, 128);
-#    my @structs;
-#    while ($bytes > 0) {
-#        my $struct = unpack $lde_pack, substr( $buf, 0, $lde_start_size, q<> );
-#   $struct->{'name'} = substr( $buf, 0, $struct->{'reclen'} - $lde_start_size, q<> );
-#   $struct->{'type'} = (_FILE_TYPE)[ unpack 'xxC', substr( $struct->{'name'}, -3, 3, q<> ) ];
-#   push @structs, $struct;
-#
-#   $bytes -= $struct->{'reclen'};
-#    }
-#
-#    return @structs;
-#}
 
 1;
