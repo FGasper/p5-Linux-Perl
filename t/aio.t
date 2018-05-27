@@ -21,7 +21,7 @@ my $arch = LP_EnsureArch::ensure_support('aio');
 my $base_class = 'Linux::Perl::aio';
 
 for my $class ( $base_class, "$base_class\::$arch" ) {
-    diag "===== $class";
+    note "===== $class";
 
     fork or do {
         Module::Load::load($class);
@@ -177,7 +177,7 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
                     \@events,
                     [
                         superhashof( {
-                        obj => $control->id(),
+                            obj => $control->id(),
                         } ),
                     ],
                     'getevents() return',
@@ -187,6 +187,51 @@ for my $class ( $base_class, "$base_class\::$arch" ) {
                     ${ $control->buffer_sr() },
                     'abcdef' . ( "\0" x 19 ),
                     'did read',
+                );
+            }
+
+            {
+                note 'eventfd on write';
+
+                require Linux::Perl::eventfd;
+
+                open my $wfh, '>', "$dir/abc";
+
+                my $buf = 'This is my buffer!';
+
+                my $eventfd = Linux::Perl::eventfd->new();
+
+                my $control = $aio->create_control(
+                    $wfh,
+                    \$buf,
+                    lio_opcode => 'PWRITE',
+                    eventfd => $eventfd->fileno(),
+                );
+
+                my $submitted = $aio->submit($control);
+
+                is( $submitted, 1, 'submit() worked' );
+
+                my $efd_read = $eventfd->read();
+
+                my @events = $aio->getevents( 1, 1, 0 );
+
+                cmp_deeply(
+                    \@events,
+                    [
+                        superhashof( {
+                            obj => $control->id(),
+                        } ),
+                    ],
+                    'getevents() return',
+                );
+
+                my $contents = File::Slurp::read_file("$dir/abc");
+
+                is(
+                    $contents,
+                    $buf,
+                    'did write',
                 );
             }
         };

@@ -45,6 +45,7 @@ WriteMakefile1(
         'Test::SharedFork' => 0,
         'File::Temp' => 0,
         'File::Slurp' => 0,
+        'Linux::Seccomp' => 0,
     },
 );
 

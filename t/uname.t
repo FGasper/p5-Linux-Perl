@@ -8,14 +8,12 @@ use FindBin;
 use lib "$FindBin::Bin/lib";
 use LP_EnsureArch;
 
-LP_EnsureArch::ensure_support('aio');
+LP_EnsureArch::ensure_support('uname');
 
 use Test::More;
 use Test::SharedFork;
 
 use Linux::Perl::uname;
-
-plan tests => 3 * 2;
 
 for my $generic_yn ( 0, 1 ) {
     if ( my $pid = fork ) {
@@ -37,10 +35,14 @@ for my $generic_yn ( 0, 1 ) {
     }
 }
 
+done_testing();
+
+#----------------------------------------------------------------------
+
 sub _do_tests {
     my ($class) = @_;
 
-    diag "$class (PID $$)";
+    note "$class (PID $$)";
 
     my @resp = $class->uname();
 

@@ -1,12 +1,13 @@
 .gitignore
 .travis.yml
+Changes
 LICENSE
 MANIFEST
 Makefile.PL
 lib/Linux/Perl.pm
 lib/Linux/Perl/ArchLoader.pm
 lib/Linux/Perl/Constants.pm
-lib/Linux/Perl/Constants/x86_64.pm
+lib/Linux/Perl/Constants/Fcntl.pm
 lib/Linux/Perl/EasyPack.pm
 lib/Linux/Perl/Endian.pm
 lib/Linux/Perl/TimeSpec.pm
@@ -17,8 +18,10 @@ lib/Linux/Perl/aio.pm
 lib/Linux/Perl/aio/bits64.pm
 lib/Linux/Perl/aio/x86_64.pm
 lib/Linux/Perl/eventfd.pm
+lib/Linux/Perl/eventfd/i386.pm
 lib/Linux/Perl/eventfd/x86_64.pm
 lib/Linux/Perl/uname.pm
+lib/Linux/Perl/uname/i386.pm
 lib/Linux/Perl/uname/x86_64.pm
 t/aio.t
 t/eventfd.t

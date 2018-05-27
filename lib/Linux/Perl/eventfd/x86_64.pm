@@ -12,7 +12,4 @@ use constant {
     NR_eventfd2 => 290,
 };
 
-*flag_CLOEXEC = *Linux::Perl::Constants::x86_64::flag_CLOEXEC;
-*flag_NONBLOCK = *Linux::Perl::Constants::x86_64::flag_NONBLOCK;
-
 1;
