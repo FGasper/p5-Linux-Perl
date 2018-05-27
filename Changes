@@ -1,5 +1,8 @@
 Revision history for Perl module Linux::Perl
 
+0.05
+- Support arm (Raspberry Pi)
+
 0.04 Thu Apr 19 2018
 - Make unsupported case in tests print system call numbers in CPAN Testers.
 
