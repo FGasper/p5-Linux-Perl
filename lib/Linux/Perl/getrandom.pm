@@ -29,6 +29,7 @@ call is available B<only> in kernel 3.17 and after.
 
 =cut
 
+use Linux::Perl;
 use Linux::Perl::Pointer;
 
 my %FLAG_VALUE = (
