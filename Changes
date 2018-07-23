@@ -1,5 +1,9 @@
 Revision history for Perl module Linux::Perl
 
+0.06
+- Add getrandom
+- Give Linux::Perl::X::Call the “call_number” and “error” properties.
+
 0.05 Sun May 27 2018
 - Support arm (Raspberry Pi)
 

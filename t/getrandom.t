@@ -3,7 +3,7 @@
 use Test::More;
 use Test::FailWarnings;
 
-use Errno;
+use Errno ();
 
 use Linux::Perl::getrandom ();
 

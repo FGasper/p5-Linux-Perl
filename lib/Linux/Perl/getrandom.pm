@@ -25,7 +25,8 @@ Linux::Perl::getrandom
 =head1 DESCRIPTION
 
 This is an interface to the C<getrandom> system call. This system
-call is available B<only> in kernel 3.17 and after.
+call is documented only for kernel 3.17 and after; however, it appears
+to be present in some earlier kernel versions.
 
 =cut
 
