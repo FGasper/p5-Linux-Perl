@@ -24,7 +24,7 @@ Linux::Perl::getrandom
 
 =head1 DESCRIPTION
 
-This is an interface to the C<getrandom> system call. This system
+This is an interface to Linux’s C<getrandom> system call. This system
 call is documented only for kernel 3.17 and after; however, it appears
 to be present in some earlier kernel versions.
 
