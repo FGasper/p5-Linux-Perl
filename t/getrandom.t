@@ -3,6 +3,12 @@
 use Test::More;
 use Test::FailWarnings;
 
+use FindBin;
+use lib "$FindBin::Bin/lib";
+use LP_EnsureArch;
+
+LP_EnsureArch::ensure_support('getrandom');
+
 use Errno ();
 
 use Linux::Perl::getrandom ();
