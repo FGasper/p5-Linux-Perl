@@ -1,0 +1,184 @@
+package Linux::Perl::timerfd;
+
+use strict;
+use warnings;
+
+use Call::Context;
+
+use Linux::Perl::Constants;
+use Linux::Perl::Endian;
+use Linux::Perl::ParseFlags;
+
+use constant {
+    clock_REALTIME  => 0,
+    clock_MONOTONIC => 1,
+    clock_BOOTTIME  => 7,
+    clock_REALTIME_ALARM => 8,
+    clock_BOOTTIME_ALARM => 9,
+};
+
+*flag_NONBLOCK = *Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
+*flag_CLOEXEC = *Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
+
+sub new {
+    my ($class, %opts) = @_;
+
+    my $clockid_str = $opts{'clockid'} || die 'Need “clockid”!';
+    my $clockid = _CLOCKID()->{$clockid_str};
+    if (!defined $clockid) {
+	die "Unknown “clockid”: “$clockid_str”!";
+    }
+
+    my $flags = Linux::Perl::ParseFlags::parse( $class, $opts{'flags'} );
+
+    my $arch_module = $class->can('NR_timerfd_create') && $class;
+    $arch_module ||= do {
+        require Linux::Perl::ArchLoader;
+        Linux::Perl::ArchLoader::get_arch_module($class);
+    };
+
+    my $fd = Linux::Perl::call( $arch_module->NR_timerfd_create(), $clockid, $flags );
+
+    #Force CLOEXEC if the flag was given.
+    local $^F = 0 if $flags & $arch_module->flag_CLOEXEC();
+
+    open my $fh, '+<&=' . $fd;
+
+    return bless [$fh], $arch_module;
+}
+
+#----------------------------------------------------------------------
+
+=head2 I<OBJ>->fileno()
+
+Returns the file descriptor number.
+
+=cut
+
+sub fileno { fileno $_[0][0] }
+
+#----------------------------------------------------------------------
+
+=head2 $OBJ = I<OBJ>->settime( %OPTS )
+
+=head2 ($old_interval, $old_value) = I<OBJ>->settime( %OPTS )
+
+%OPTS is:
+
+=over
+
+=item * C<interval> - in seconds
+
+=item * C<value> - in seconds
+
+=item * C<flags> - Optional, arrayref
+
+=back
+
+In scalar context this returns the object to facilitate easy
+setting of the value on instantiation.
+
+In list context it returns the previous interval and value.
+
+=cut
+
+sub settime {
+    my ($self, %opts) = @_;
+
+    my $flags = Linux::Perl::ParseFlags::parse(
+	'Linux::Perl::timerfd::_set_flags',
+	$opts{'flags'},
+    );
+
+    my $int_packed = Linux::Perl::TimeSpec::from_float( $opts{'interval'} || 0 );
+    my $val_packed = Linux::Perl::TimeSpec::from_float( $opts{'value'} || 0 );
+
+    my $new_packed = $int_packed . $val_packed;
+    my $old_packed = ("\0") x length $new_packed;
+
+    Linux::Perl::call( $self->NR_timerfd_settime(), 0 + $self->fileno(), 0 + $flags, $new_packed, $old_packed );
+
+    return wantarray ? _parse_itimerspec($old_packed) : $self;
+}
+
+#----------------------------------------------------------------------
+
+=head2 ($old_interval, $old_value) = I<OBJ>->gettime()
+
+=cut
+
+sub gettime {
+    my ($self) = @_;
+
+    Call::Context::must_be_list();
+
+    my $packed = ( Linux::Perl::TimeSpec::from_float(0) ) x 2;
+
+    Linux::Perl::call( $self->NR_timerfd_gettime(), 0 + $self->fileno(), $packed );
+
+    return _parse_itimerspec($packed);
+}
+
+#----------------------------------------------------------------------
+
+=head2 my $ok_yn = I<OBJ>->set_ticks( $NUM_TICKS )
+
+See C<man 2 timerfd_create> for details on what this does.
+Returns true/false to indicate success/failure; check C<$!> for
+the failure reason.
+
+=cut
+
+# man 2 ioctl_list
+use constant _TFD_IOC_SET_TICKS => 0x40085400;
+
+sub set_ticks {
+    my ($self, $num_ticks) = @_;
+
+    my $buf = "\0" x 8;
+
+    if ($self->_PERL_CAN_64BIT()) {
+	$buf = pack 'Q', $num_ticks;
+    }
+    elsif (Linux::Perl::Endian::SYSTEM_IS_BIG_ENDIAN) {
+        $buf = ("\0" x 4) . pack 'N', $num_ticks;
+    }
+    else {
+        $buf = pack('V', $num_ticks) . ("\0" x 4);
+    }
+
+    return !!ioctl( $self->[0], _TFD_IOC_SET_TICKS(), $buf );
+}
+
+#----------------------------------------------------------------------
+
+=head2 $expirations = I<OBJ>->read()
+
+See C<man 2 timerfd_create> for details on what this returns.
+
+=cut
+
+*read = __PACKAGE__->can('_read');
+
+#----------------------------------------------------------------------
+
+sub _parse_itimerspec {
+    my ($packed) = @_;
+
+    my $tslen = length($packed) / 2;
+    my ($int, $val) = unpack "A${tslen}A${tslen}", $packed;
+    $_ = Linux::Perl::TimeSpec::to_float($_) for ($int, $val);
+    
+    return ($int, $val);
+}
+
+#----------------------------------------------------------------------
+
+package Linux::Perl::timerfd::_set_flags;
+
+use constant {
+    flag_ABSTIME => 1,
+    flag_CANCEL_ON_SET => 2,
+};
+
+1;
