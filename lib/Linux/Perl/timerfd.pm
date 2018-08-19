@@ -130,8 +130,10 @@ sub gettime {
 =head2 my $ok_yn = I<OBJ>->set_ticks( $NUM_TICKS )
 
 See C<man 2 timerfd_create> for details on what this does.
-Returns true/false to indicate success/failure; check C<$!> for
-the failure reason.
+
+This returns truthy if the operation succeeded and falsy if
+the system does not support this operation. (Any other failure
+will prompt an exception to be thrown.)
 
 =cut
 
@@ -153,7 +155,11 @@ sub set_ticks {
         $buf = pack('V', $num_ticks) . ("\0" x 4);
     }
 
-    return !!ioctl( $self->[0], _TFD_IOC_SET_TICKS(), $buf );
+    return 1 if ioctl( $self->[0], _TFD_IOC_SET_TICKS(), $buf );
+
+    return !1 if $! == _ENOTTY();   #falsy
+
+    die "ioctl($self->[0][0], TFD_IOC_SET_TICKS): $!";
 }
 
 #----------------------------------------------------------------------
@@ -183,8 +189,8 @@ sub _parse_itimerspec {
 package Linux::Perl::timerfd::_set_flags;
 
 use constant {
-    flag_ABSTIME => 1,
-    flag_CANCEL_ON_SET => 2,
+    _flag_ABSTIME => 1,
+    _flag_CANCEL_ON_SET => 2,
 };
 
 1;

@@ -44,12 +44,30 @@ sub _do_tests {
 
     note "Using class: $class (PID $$)";
 
-    my $obj = $class->new( clockid => 'REALTIME' );
+    my $obj = $class->new( clockid => 'MONOTONIC' );
     ok( $obj->fileno(), 'fileno()' );
 
-    my @old = $obj->settime( value => 0.1, interval => 0.1 );
+    is(
+        scalar( $obj->settime( value => 0.1, interval => 0.2 ) ),
+        $obj,
+        'scalar-context settime() return',
+    );
 
-    cmp_deeply( \@old, [0, 0], 'settime() list return' );
+    my @old = $obj->settime( value => 0.3, interval => 0.4 );
+
+    cmp_deeply(
+        \@old,
+        [ num(0.2, 0.01), num(0.1, 0.01) ],
+        'settime() list return',
+    );
+
+    my @cur = $obj->gettime();
+
+    cmp_deeply(
+        \@cur,
+        [ num(0.4, 0.01), num(0.3, 0.01) ],
+        'gettime() list return',
+    );
 
     vec( my $rin = q<>, $obj->fileno(), 1 ) = 1;
 
@@ -101,6 +119,20 @@ sub _do_tests {
         };
 
         is( $obj->read(), 23, 'set_ticks() worked as expected' );
+    }
+
+    #----------------------------------------------------------------------
+
+    {
+        my $obj = $class->new(
+            clockid => 'REALTIME',
+            flags => ['NONBLOCK'],
+        )->settime(
+            value => 60,
+            flags => ['ABSTIME'],
+        );
+
+        is( $obj->read(), 1, 'settime() - ABSTIME flag' );
     }
 }
 
