@@ -1,5 +1,8 @@
 package Linux::Perl::Constants;
 
+use strict;
+use warnings;
+
 our $ARCHITECTURE;
 
 sub get_architecture_name {
