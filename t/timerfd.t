@@ -10,6 +10,8 @@ use LP_EnsureArch;
 
 LP_EnsureArch::ensure_support('timerfd');
 
+use File::Temp;
+
 use Test::More;
 use Test::Deep;
 use Test::FailWarnings;
@@ -68,6 +70,37 @@ sub _do_tests {
     {
         local $! = $err;
         ok( $!{'EAGAIN'}, '... and the error is as expected' );
+    }
+
+    #----------------------------------------------------------------------
+
+    {
+        local $^F = 1000;
+
+        my ($tfh, $tfile) = File::Temp::tempfile( CLEANUP => 1 );
+
+        my $obj = $class->new( clockid => 'REALTIME' );
+        my $fileno = $obj->fileno();
+
+        my $no_cloexec = `$^X -e'print readlink "/proc/self/fd/$fileno"'`;
+        ok( $no_cloexec, 'no CLOEXEC if $^F is set high' );
+
+        $obj = $class->new(
+            clockid => 'REALTIME',
+            flags => ['NONBLOCK', 'CLOEXEC'],
+        );
+        $no_cloexec = `$^X -e'print readlink "/proc/self/fd/$fileno"'`;
+        ok( !$no_cloexec, 'CLOEXEC if $^F is high but CLOEXEC is passed' );
+    }
+
+    SKIP: {
+        my $obj = $class->new( clockid => 'REALTIME' );
+
+        $obj->set_ticks(23) or do {
+            skip "set_ticks() does not work.", 1;
+        };
+
+        is( $obj->read(), 23, 'set_ticks() worked as expected' );
     }
 }
 
