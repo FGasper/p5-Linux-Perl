@@ -5,7 +5,7 @@ use warnings;
 
 my $sig_num_hr;
 
-use constant _SIG_MAX = 63;
+use constant _SIG_MAX => 63;
 
 sub from_list {
     my (@list) = @_;
@@ -17,10 +17,10 @@ sub from_list {
 
             $sig_num_hr ||= do {
                 require Config;
-                my @names = split m< >, $Config{'sig_name'};
+                my @names = split m< >, $Config::Config{'sig_name'};
                 my %signum;
 
-                @signum{@names} = split m< >, $Config{'sig_num'};
+                @signum{@names} = split m< >, $Config::Config{'sig_num'};
                 \%signum;
             };
 

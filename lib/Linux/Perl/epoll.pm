@@ -3,7 +3,9 @@ package Linux::Perl::epoll;
 use strict;
 use warnings;
 
+use Linux::Perl;
 use Linux::Perl::Constants::Fcntl;
+use Linux::Perl::EasyPack;
 use Linux::Perl::ParseFlags;
 use Linux::Perl::SigSet;
 
@@ -14,19 +16,19 @@ sub new {
 
     local ($!, $^E);
 
-    my $arch_module = $class->can('NR_eventfd') && $class;
+    my $arch_module = $class->can('NR_epoll_create') && $class;
     $arch_module ||= do {
         require Linux::Perl::ArchLoader;
         Linux::Perl::ArchLoader::get_arch_module($class);
     };
 
-    my $flags = Linux::Perl::ParseFlags::parse( $opts{'flags'} );
+    my $flags = Linux::Perl::ParseFlags::parse( $class, $opts{'flags'} );
 
     my $call_name = 'NR_epoll_create';
 
     my $fd;
 
-    if ($flags)) {
+    if ($flags) {
         $call_name .= '1';
 
         $fd = Linux::Perl::call( $arch_module->$call_name(), 0 + $flags );
@@ -37,12 +39,16 @@ sub new {
         $fd = Linux::Perl::call( $arch_module->$call_name(), 0 + $opts{'size'} );
     }
 
-    #Force CLOEXEC if the flag was given.
-    local $^F = 0 if $flags & _flag_CLOEXEC();
+    # Force the CLOEXEC behavior that Perl imposes on its file handles
+    # unless the CLOEXEC flag was given explicitly.
+    my $fh;
 
-    open my $fh, '+<&=' . $fd;
+    if ( !($flags & _flag_CLOEXEC()) ) {
+        open $fh, '+<&=' . $fd;
+    }
 
-    return bless [$fh], $arch_module;
+    # NB: tests access the filehandle directly.
+    return bless [$fd, $fh], $arch_module;
 }
 
 my ($epoll_event_keys_ar, $epoll_event_pack);
@@ -98,7 +104,7 @@ sub _opts_to_event {
 
     my $events = 0;
     for my $evtname ( @{ $opts_hr->{'events'} } ) {
-        $events |= _evt_num()->{$evt_name} || do {
+        $events |= _evt_num()->{$evtname} || do {
             die "Unknown event '$evtname'";
         };
     }
@@ -119,6 +125,7 @@ sub _add_or_modify {
 
     Linux::Perl::call(
         $self->NR_epoll_ctl(),
+        0 + $self->[0],
         0 + $op,
         0 + $fd,
         $event_packed,
@@ -134,6 +141,7 @@ sub delete {
 
     Linux::Perl::call(
         $self->NR_epoll_ctl(),
+        0 + $self->[0],
         0 + _EPOLL_CTL_DEL(),
         0 + $fd,
         undef,
@@ -161,6 +169,7 @@ sub wait {
 
     my $count = Linux::Perl::call(
         $self->call_name(),
+        0 + $self->[0],
         $buf,
         0 + $opts{'maxevents'},
         0 + $opts{'timeout'},
@@ -183,7 +192,7 @@ sub wait {
 sub _events_to_ar {
     my ($events_num) = @_;
 
-    my $name_hr = _event_name()
+    my $name_hr = _event_name();
 
     my @events;
     for my $evt_num ( keys %$name_hr ) {

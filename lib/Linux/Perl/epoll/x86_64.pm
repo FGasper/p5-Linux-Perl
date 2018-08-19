@@ -3,6 +3,8 @@ package Linux::Perl::epoll::x86_64;
 use strict;
 use warnings;
 
+use parent qw( Linux::Perl::epoll );
+
 use constant {
     NR_epoll_create => 213,
     NR_epoll_create1 => 291,
