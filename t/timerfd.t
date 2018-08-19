@@ -49,10 +49,26 @@ sub _do_tests {
 
     cmp_deeply( \@old, [0, 0], 'settime() list return' );
 
-    vec( my $rin, $obj->fileno(), 1 ) = 1;
+    vec( my $rin = q<>, $obj->fileno(), 1 ) = 1;
 
     is( $obj->read(), 1, 'read() - blocking' );
     is( $obj->read(), 1, 'read() - blocking (again)' );
+
+    #----------------------------------------------------------------------
+
+    $obj = $class->new(
+        clockid => 'REALTIME',
+        flags => ['NONBLOCK'],
+    );
+
+    my $read_val = $obj->read();
+    my $err = $!;
+    is( $read_val, undef, 'read() - non-blocking' );
+
+    {
+        local $! = $err;
+        ok( $!{'EAGAIN'}, '... and the error is as expected' );
+    }
 }
 
 done_testing();
