@@ -26,6 +26,8 @@ Linux::Perl::eventfd
 This is an interface to the C<eventfd>/C<eventfd2> system call.
 (C<eventfd2> is only called if the given parameters require it.)
 
+This class inherits from L<Linux::Perl::Base::TimerEventFD>.
+
 =cut
 
 use strict;
@@ -118,7 +120,7 @@ on error.
 
 =head2 I<OBJ>->add( NUMBER )
 
-Adds NUMBER to the counter.
+Adds NUMBER to the counter. Returns undef and sets C<$!> on failure.
 
 =cut
 

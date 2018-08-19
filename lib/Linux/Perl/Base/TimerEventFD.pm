@@ -3,15 +3,30 @@ package Linux::Perl::Base::TimerEventFD;
 use strict;
 use warnings;
 
+=encoding utf-8
+
+=head1 NAME
+
+Linux::Perl::Base::TimerEventFD
+
+=head1 DESCRIPTION
+
+L<Linux::Perl::timerfd> and L<Linux::Perl::eventfd> require a fair amount of
+similar logic to implement. This base class contains that logic.
+
+=cut
+
 use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::Endian;
 
 *_flag_CLOEXEC = \*Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
 *_flag_NONBLOCK = \*Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
 
-use constant _PERL_CAN_64BIT => !!do { local $@; eval { pack 'Q', 1 } };
+use constant _PERL_CAN_64BIT => !!do { local $@; eval { pack 'Q' } };
 
 #----------------------------------------------------------------------
+
+=head1 METHODS
 
 =head2 I<OBJ>->fileno()
 
@@ -46,7 +61,7 @@ sub _parse64 {
         }
 
         #TODO: Need to test what happens on a 32-bit Perl.
-        die "No 64-bit support! (high=$big, low=$low)" if $big;
+        $big && die "No 64-bit support! (high=$big, low=$low)";
     }
 
     return $low;
