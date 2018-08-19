@@ -1,4 +1,4 @@
-package Linux::Perl::eventfd::arm;
+package Linux::Perl::timerfd::arm;
 
 use strict;
 use warnings;

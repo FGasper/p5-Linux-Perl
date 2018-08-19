@@ -9,7 +9,7 @@ sub parse {
     my $flags = 0;
     if ( $flags_ar ) {
         for my $fl ( @$flags_ar ) {
-            my $val_cr = $arch_module->can("flag_$fl") or do {
+            my $val_cr = $arch_module->can("_flag_$fl") or do {
                 die "unknown flag: “$fl”";
             };
             $flags |= $val_cr->();

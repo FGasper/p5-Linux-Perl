@@ -3,31 +3,33 @@ package Linux::Perl::timerfd;
 use strict;
 use warnings;
 
+use parent 'Linux::Perl::Base::TimerEventFD';
+
 use Call::Context;
 
-use Linux::Perl::Constants;
+use Linux::Perl;
 use Linux::Perl::Endian;
 use Linux::Perl::ParseFlags;
+use Linux::Perl::TimeSpec;
 
 use constant {
-    clock_REALTIME  => 0,
-    clock_MONOTONIC => 1,
-    clock_BOOTTIME  => 7,
-    clock_REALTIME_ALARM => 8,
-    clock_BOOTTIME_ALARM => 9,
+    _clock_REALTIME  => 0,
+    _clock_MONOTONIC => 1,
+    _clock_BOOTTIME  => 7,
+    _clock_REALTIME_ALARM => 8,
+    _clock_BOOTTIME_ALARM => 9,
 };
-
-*flag_NONBLOCK = *Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
-*flag_CLOEXEC = *Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
 
 sub new {
     my ($class, %opts) = @_;
 
     my $clockid_str = $opts{'clockid'} || die 'Need “clockid”!';
-    my $clockid = _CLOCKID()->{$clockid_str};
-    if (!defined $clockid) {
-	die "Unknown “clockid”: “$clockid_str”!";
+    my $clockid = $class->can("_clock_$clockid_str");
+    if (!$clockid) {
+        die "Unknown “clockid”: “$clockid_str”!";
     }
+
+    $clockid = $clockid->();
 
     my $flags = Linux::Perl::ParseFlags::parse( $class, $opts{'flags'} );
 
@@ -37,10 +39,10 @@ sub new {
         Linux::Perl::ArchLoader::get_arch_module($class);
     };
 
-    my $fd = Linux::Perl::call( $arch_module->NR_timerfd_create(), $clockid, $flags );
+    my $fd = Linux::Perl::call( $arch_module->NR_timerfd_create(), 0 + $clockid, $flags );
 
     #Force CLOEXEC if the flag was given.
-    local $^F = 0 if $flags & $arch_module->flag_CLOEXEC();
+    local $^F = 0 if $flags & $arch_module->_flag_CLOEXEC();
 
     open my $fh, '+<&=' . $fd;
 
@@ -49,19 +51,11 @@ sub new {
 
 #----------------------------------------------------------------------
 
-=head2 I<OBJ>->fileno()
-
-Returns the file descriptor number.
-
-=cut
-
-sub fileno { fileno $_[0][0] }
-
-#----------------------------------------------------------------------
-
 =head2 $OBJ = I<OBJ>->settime( %OPTS )
 
 =head2 ($old_interval, $old_value) = I<OBJ>->settime( %OPTS )
+
+See C<man 2 timerfd_settime> for details about what this does.
 
 %OPTS is:
 
@@ -69,9 +63,11 @@ sub fileno { fileno $_[0][0] }
 
 =item * C<interval> - in seconds
 
-=item * C<value> - in seconds
+=item * C<value> - in seconds. This defaults to the
+value given for C<interval>.
 
-=item * C<flags> - Optional, arrayref
+=item * C<flags> - Optional, arrayref. Accepted values are
+C<ABSTIME> and C<CANCEL_ON_SET>.
 
 =back
 
@@ -86,9 +82,19 @@ sub settime {
     my ($self, %opts) = @_;
 
     my $flags = Linux::Perl::ParseFlags::parse(
-	'Linux::Perl::timerfd::_set_flags',
-	$opts{'flags'},
+        'Linux::Perl::timerfd::_set_flags',
+        $opts{'flags'},
     );
+
+    if (!$opts{'value'}) {
+        if ($opts{'interval'}) {
+            die "“interval” is ignored if “value” is 0.";
+        }
+
+        $opts{'value'} = 0;
+    }
+
+    $opts{'interval'} ||= 0;
 
     my $int_packed = Linux::Perl::TimeSpec::from_float( $opts{'interval'} || 0 );
     my $val_packed = Linux::Perl::TimeSpec::from_float( $opts{'value'} || 0 );
@@ -138,10 +144,10 @@ sub set_ticks {
     my $buf = "\0" x 8;
 
     if ($self->_PERL_CAN_64BIT()) {
-	$buf = pack 'Q', $num_ticks;
+        $buf = pack 'Q', $num_ticks;
     }
     elsif (Linux::Perl::Endian::SYSTEM_IS_BIG_ENDIAN) {
-        $buf = ("\0" x 4) . pack 'N', $num_ticks;
+        $buf = ("\0" x 4) . pack('N', $num_ticks);
     }
     else {
         $buf = pack('V', $num_ticks) . ("\0" x 4);
@@ -166,9 +172,9 @@ sub _parse_itimerspec {
     my ($packed) = @_;
 
     my $tslen = length($packed) / 2;
-    my ($int, $val) = unpack "A${tslen}A${tslen}", $packed;
+    my ($int, $val) = unpack "a${tslen}a${tslen}", $packed;
     $_ = Linux::Perl::TimeSpec::to_float($_) for ($int, $val);
-    
+
     return ($int, $val);
 }
 

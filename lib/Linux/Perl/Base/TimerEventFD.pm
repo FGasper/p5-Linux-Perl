@@ -3,7 +3,11 @@ package Linux::Perl::Base::TimerEventFD;
 use strict;
 use warnings;
 
+use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::Endian;
+
+*_flag_CLOEXEC = \*Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
+*_flag_NONBLOCK = \*Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
 
 use constant _PERL_CAN_64BIT => !!do { local $@; eval { pack 'Q', 1 } };
 

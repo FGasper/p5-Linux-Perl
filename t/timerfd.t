@@ -45,7 +45,7 @@ sub _do_tests {
     my $obj = $class->new( clockid => 'REALTIME' );
     ok( $obj->fileno(), 'fileno()' );
 
-    my @old = $obj->settime( interval => 0.1 );
+    my @old = $obj->settime( value => 0.1, interval => 0.1 );
 
     cmp_deeply( \@old, [0, 0], 'settime() list return' );
 
