@@ -1,6 +1,6 @@
 Revision history for Perl module Linux::Perl
 
-0.06
+0.06 Sat Aug 18 2018
 - Add getrandom
 - Give Linux::Perl::X::Call the “call_number” and “error” properties.
 
