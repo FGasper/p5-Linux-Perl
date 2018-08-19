@@ -90,6 +90,17 @@ sub _do_tests {
         'received an event',
     ) or diag explain @events;
 
+    {
+        sysread( $r, my $buf, 1 );  #flush buffer
+    }
+
+    #----------------------------------------------------------------------
+
+    $epl = $class->new();
+    $epl->add( $r, events => ['IN'] );
+
+    @events = $epl->wait( maxevents => 1, timeout => 1, sigmask => ['INT'] );
+
     return;
 }
 

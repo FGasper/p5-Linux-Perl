@@ -232,7 +232,10 @@ sub wait {
         $buf,
         0 + $opts{'maxevents'},
         0 + $timeout,
-        $sigmask || (),
+        ( length($sigmask)
+            ? ( $sigmask, length $sigmask )
+            : (),
+        ),
     );
 
     my @events;

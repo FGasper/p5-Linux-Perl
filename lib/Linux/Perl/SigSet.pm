@@ -27,7 +27,7 @@ sub from_list {
             $sig = $sig_num_hr->{$sig} || die "Unrecognized signal: '$sig'";
         }
 
-        vec( $vec, $sig, 1 ) = 1;
+        vec( $vec, $sig - 1, 1 ) = 1;
     }
 
     vec( $vec, _SIG_MAX(), 1 ) = 0;
