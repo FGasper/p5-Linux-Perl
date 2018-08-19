@@ -83,11 +83,36 @@ use constant {
 
 use constant _event_name => { reverse %{ _event_num() } };
 
+=head2 I<OBJ>->add( $FD_OR_FH, %OPTS )
+
+Adds a listener to the epoll instance. $FD_OR_FH is either a
+Perl filehandle or a file descriptor number. %OPTS are:
+
+=over
+
+=item * C<events> - An array reference of events/switches. The
+recognized event names are: C<IN>, C<OUT>, C<RDHUP>, C<PRI>, C<ERR>,
+C<HUP>, C<ET>, C<ONESHOT>, C<WAKEUP>, and C<EXCLUSIVE>. Your kernel
+may not support all of those; check C<man 2 epoll_ctl> for details.
+
+=item * C<data> - Optional, an arbitrary number to store with the file
+descriptor. This defaults to the file descriptor.
+
+=back
+
+=cut
+
 sub add {
     my ($self, $fd_or_fh, @opts_kv) = @_;
 
     return $self->_add_or_modify( _EPOLL_CTL_ADD(), $fd_or_fh, @opts_kv );
 }
+
+=head2 I<OBJ>->modify( $FD_OR_FH, %OPTS )
+
+Same arguments as C<add()>.
+
+=cut
 
 sub modify {
     my ($self, $fd_or_fh, @opts_kv) = @_;
@@ -104,7 +129,7 @@ sub _opts_to_event {
 
     my $events = 0;
     for my $evtname ( @{ $opts_hr->{'events'} } ) {
-        $events |= _evt_num()->{$evtname} || do {
+        $events |= _event_num()->{$evtname} || do {
             die "Unknown event '$evtname'";
         };
     }
@@ -134,6 +159,14 @@ sub _add_or_modify {
     return $self;
 }
 
+#----------------------------------------------------------------------
+
+=head2 I<OBJ>->delete( $FD_OR_FH )
+
+Same arguments as C<add()>.
+
+=cut
+
 sub delete {
     my ($self, $fd_or_fh) = @_;
 
@@ -144,11 +177,35 @@ sub delete {
         0 + $self->[0],
         0 + _EPOLL_CTL_DEL(),
         0 + $fd,
-        undef,
+        (pack $epoll_event_pack),   #accommodate pre-2.6.9 kernels
     );
 
     return $self;
 }
+
+#----------------------------------------------------------------------
+
+=head2 @events = I<OBJ>->wait( %OPTS )
+
+Waits for one or more events on the epoll. %OPTS are:
+
+=over
+
+=item * C<maxevents> - The number of events to listen for.
+
+=item * C<timeout> - in seconds
+
+=item * C<sigmask> - Optional, an array of signals to mask. The signals
+can be specified either as names (e.g., C<INT>) or as numbers.
+See C<man 2 epoll_pwait> for why you might want to do this.
+
+=back
+
+The return is a list of hash references, one for each received event.
+Each hash reference has C<events> and C<data>, analogous to the same
+inputs as given to C<add()> above.
+
+=cut
 
 sub wait {
     my ($self, %opts) = @_;
@@ -167,17 +224,19 @@ sub wait {
     my $blank_event = pack $epoll_event_pack;
     my $buf = $blank_event x $opts{'maxevents'};
 
+    my $timeout = int(1000 * $opts{'timeout'});
+
     my $count = Linux::Perl::call(
-        $self->call_name(),
+        $self->$call_name(),
         0 + $self->[0],
         $buf,
         0 + $opts{'maxevents'},
-        0 + $opts{'timeout'},
+        0 + $timeout,
         $sigmask || (),
     );
 
     my @events;
-    for (0 .. $count) {
+    for (1 .. $count) {
         my ($events_num, $data) = unpack( $epoll_event_pack, substr( $buf, 0, length($blank_event), q<> ) );
 
         push @events, {

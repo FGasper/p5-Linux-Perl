@@ -44,8 +44,6 @@ sub _do_tests {
 
     note "Using class: $class (PID $$)";
 
-    pipe( my $r, my $w );
-
     {
         my $epl = $class->new();
         my $fileno = $epl->[0];
@@ -67,6 +65,30 @@ sub _do_tests {
         $no_cloexec = `$^X -e'print readlink "/proc/self/fd/$fileno"'`;
         ok( !$no_cloexec, 'CLOEXEC if $^F is high but CLOEXEC is given' );
     }
+
+    pipe( my $r, my $w );
+
+    my $epl = $class->new();
+    $epl->add( $r, events => ['IN'] );
+
+    my @events = $epl->wait( maxevents => 1, timeout => 1 );
+
+    cmp_deeply( \@events, [], 'no read events' ) or diag explain \@events;
+
+    syswrite( $w, 'x' );
+
+    @events = $epl->wait( maxevents => 1, timeout => 1 );
+
+    cmp_deeply(
+        \@events,
+        [
+            {
+                events => [ 'IN' ],
+                data => fileno($r),
+            },
+        ],
+        'received an event',
+    ) or diag explain @events;
 
     return;
 }
