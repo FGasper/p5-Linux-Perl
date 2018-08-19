@@ -253,6 +253,8 @@ L<Linux::Perl::aio>’s C<create_control()> method.
 
 =cut
 
+use Linux::Perl::Pointer ();
+
 use constant {
     _RWF_HIPRI  => 1,
     _RWF_DSYNC  => 2,
@@ -315,8 +317,6 @@ BEGIN {
     ($iocb_keys_ar, $iocb_pack) = Linux::Perl::EasyPack::split_pack_list(@_iocb_src);
 }
 
-my $pointer_unpack = (4 == length pack 'P') ? 'L' : 'Q';
-
 =head1 METHODS
 
 =head2 I<CLASS>->new( FILEHANDLE, BUFFER_SR, %OPTS )
@@ -359,7 +359,7 @@ sub new {
         $opts{'resfd'} = $args{'eventfd'};
     }
 
-    my $buf_ptr = unpack $pointer_unpack, pack( 'P', $$buf_sr );
+    my $buf_ptr = Linux::Perl::Pointer::get_address($$buf_sr);
 
     my $buffer_offset = $opts{'buffer_offset'} || 0;
 
@@ -384,7 +384,7 @@ sub new {
     my $ptr = pack 'P', $packed;
 
     #We need $packed not to be garbage-collected.
-    return bless [ \$packed, $buf_sr, $ptr, unpack( $pointer_unpack, $ptr) ], $class;
+    return bless [ \$packed, $buf_sr, $ptr, unpack( Linux::Perl::Pointer::UNPACK_TMPL(), $ptr) ], $class;
 }
 
 =head2 $sref = I<OBJ>->buffer_sr()
