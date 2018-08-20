@@ -55,8 +55,8 @@ my ($epoll_event_keys_ar, $epoll_event_pack);
 
 BEGIN {
     my @_epoll_event_src = (
-        events => 'L',
-        data   => 'I!',
+        events => 'L',  #uint32_t
+        data   => 'L!', #pointer width
     );
 
     ($epoll_event_keys_ar, $epoll_event_pack) = Linux::Perl::EasyPack::split_pack_list(@_epoll_event_src);
@@ -67,7 +67,7 @@ use constant {
     _EPOLL_CTL_DEL => 2,
     _EPOLL_CTL_MOD => 3,
 
-    _event_num => {
+    EVENT_NUMBER => {
         IN => 1,
         OUT => 4,
         RDHUP => 0x2000,
@@ -81,7 +81,7 @@ use constant {
     },
 };
 
-use constant _event_name => { reverse %{ _event_num() } };
+#use constant _event_name => { reverse %{ EVENT_NUMBER() } };
 
 =head2 I<OBJ>->add( $FD_OR_FH, %OPTS )
 
@@ -129,7 +129,7 @@ sub _opts_to_event {
 
     my $events = 0;
     for my $evtname ( @{ $opts_hr->{'events'} } ) {
-        $events |= _event_num()->{$evtname} || do {
+        $events |= EVENT_NUMBER()->{$evtname} || do {
             die "Unknown event '$evtname'";
         };
     }
@@ -195,14 +195,27 @@ Waits for one or more events on the epoll. %OPTS are:
 
 =item * C<timeout> - in seconds
 
-=item * C<sigmask> - Optional, an array of signals to mask. The signals
+=item * C<sigmask> - Optional, an array of signals to block. The signals
 can be specified either as names (e.g., C<INT>) or as numbers.
 See C<man 2 epoll_pwait> for why you might want to do this.
 
 =back
 
 The return is a list of hash references, one for each received event.
-Each hash reference has C<events> and C<data>, analogous to the same
+Each hash reference is:
+
+=over
+
+=item C<data> - The same number given in C<add()>.
+
+=item C<events> - Corresponds to the same-named array given in C<add()>,
+but to optimize performance this is returned as a single number. Check
+for specific events by iterating through the C<EVENT_NUMBER()> hash
+reference.
+
+=back
+
+Each hash reference has C<events> and C<data>., analogous to the same
 inputs as given to C<add()> above.
 
 =cut
@@ -213,7 +226,7 @@ sub wait {
     my $sigmask;
 
     my $call_name = 'NR_epoll_';
-    if ($opts{'sigmask'} && @{$opts{'sigmask'}}) {
+    if ($opts{'sigmask'}) {
         $call_name .= 'pwait';
         $sigmask = Linux::Perl::SigSet::from_list( @{$opts{'sigmask'}} );
     }
@@ -243,7 +256,7 @@ sub wait {
         my ($events_num, $data) = unpack( $epoll_event_pack, substr( $buf, 0, length($blank_event), q<> ) );
 
         push @events, {
-            events => _events_to_ar($events_num),
+            events => $events_num,
             data => $data,
         };
     }
@@ -251,19 +264,19 @@ sub wait {
     return @events;
 }
 
-sub _events_to_ar {
-    my ($events_num) = @_;
-
-    my $name_hr = _event_name();
-
-    my @events;
-    for my $evt_num ( keys %$name_hr ) {
-        if ($events_num & $evt_num) {
-            push @events, $name_hr->{$evt_num};
-        }
-    }
-
-    return \@events;
-}
+#sub _events_to_ar {
+#    my ($events_num) = @_;
+#
+#    my $name_hr = _event_name();
+#
+#    my @events;
+#    for my $evt_num ( keys %$name_hr ) {
+#        if ($events_num & $evt_num) {
+#            push @events, $name_hr->{$evt_num};
+#        }
+#    }
+#
+#    return \@events;
+#}
 
 1;
