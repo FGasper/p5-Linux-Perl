@@ -55,6 +55,8 @@ use constant {
     _clock_BOOTTIME  => 7,
     _clock_REALTIME_ALARM => 8,
     _clock_BOOTTIME_ALARM => 9,
+
+    _ENOTTY => 25,  #constant for Linux?
 };
 
 #----------------------------------------------------------------------
