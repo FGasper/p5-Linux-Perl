@@ -77,6 +77,19 @@ sub new {
     return bless [$fd, $fh], $arch_module;
 }
 
+sub DESTROY {
+    my ($self) = @_;
+
+    # Create a Perl filehandle for the file descriptor so
+    # that we get a close() when the filehandle object goes away.
+    $self->[1] || do {
+        local $^F = 1 + $self->[0];
+        open my $temp_fh, '+<&=' . $self->[0];
+    };
+
+    return;
+}
+
 my ($epoll_event_keys_ar, $epoll_event_pack);
 
 BEGIN {
