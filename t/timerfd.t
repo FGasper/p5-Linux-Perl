@@ -136,6 +136,12 @@ sub _do_tests {
             flags => ['ABSTIME'],
         );
 
+        vec( my $rin = q<>, $obj->fileno(), 1 ) = 1;
+
+        if ( 0 >= select my $rout = $rin, undef, undef, 60 ) {
+            warn "ABSTIME flag: epoch time of '1' did not make readable??";
+        }
+
         is( $obj->read(), 1, 'settime() - ABSTIME flag' );
     }
 }
