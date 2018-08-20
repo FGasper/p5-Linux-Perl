@@ -10,7 +10,7 @@ sub get_architecture_name {
         require Config;
         Config->import();
 
-        my $name = $Config{'archname'};
+        my $name = $Config::Config{'archname'};
         my $dash_at = index($name, '-');
         if ($dash_at != -1) {
             substr($name, $dash_at) = q<>;
