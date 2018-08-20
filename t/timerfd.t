@@ -57,17 +57,21 @@ sub _do_tests {
 
     cmp_deeply(
         \@old,
-        [ num(0.2, 0.01), num(0.1, 0.01) ],
-        'settime() list return',
+        [ 0.2, ignore ],
+        'settime() list return - interval',
     );
+
+    cmp_ok( $old[1], '<=', 0.1, 'settime() list return - value' );
 
     my @cur = $obj->gettime();
 
     cmp_deeply(
         \@cur,
-        [ num(0.4, 0.01), num(0.3, 0.01) ],
-        'gettime() list return',
+        [ 0.4, ignore ],
+        'gettime() list return - interval',
     );
+
+    cmp_ok( $cur[1], '<=', 0.3, 'gettime() list return - value' );
 
     vec( my $rin = q<>, $obj->fileno(), 1 ) = 1;
 
