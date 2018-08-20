@@ -295,17 +295,15 @@ Each hash reference is:
 
 =over
 
-=item C<data> - The same number given in C<add()>.
+=item * C<data> - The same number given in C<add()>—or, if you didn’t
+set a custom C<data> value, the file descriptor associated with the event.
 
-=item C<events> - Corresponds to the same-named array given in C<add()>,
+=item * C<events> - Corresponds to the same-named array given in C<add()>,
 but to optimize performance this is returned as a single number. Check
 for specific events by iterating through the C<EVENT_NUMBER()> hash
 reference.
 
 =back
-
-Each hash reference has C<events> and C<data>, analogous to the same
-inputs as given to C<add()> above.
 
 =cut
 
