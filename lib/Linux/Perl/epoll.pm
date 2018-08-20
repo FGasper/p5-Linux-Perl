@@ -3,6 +3,32 @@ package Linux::Perl::epoll;
 use strict;
 use warnings;
 
+=encoding utf-8
+
+=head1 NAME
+
+Linux::Perl::epoll
+
+=head1 SYNOPSIS
+
+    my $epl = Linux::Perl::epoll->new();
+
+    $epl->add( $fh, events => ['IN', 'ET'] );
+
+    my @events = $epl->wait(
+        maxevents => 3,
+        timeout => 2,   #seconds
+        sigmask => ['INT', 'TERM'], #optional
+    );
+
+    $epl->delete($fh);
+
+=head1 DESCRIPTION
+
+An thin interface on top of Linuxýs
+
+=cut
+
 use Linux::Perl;
 use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::EasyPack;
@@ -206,7 +232,9 @@ Waits for one or more events on the epoll. %OPTS are:
 
 =item * C<sigmask> - Optional, an array of signals to block. The signals
 can be specified either as names (e.g., C<INT>) or as numbers.
-See C<man 2 epoll_pwait> for why you might want to do this.
+See C<man 2 epoll_pwait> for why you might want to do this. (Note that Perl
+doesnýt really expect you to do signal blocking, so this may screw up in
+weird ways. If in doubt, avoid this option.)
 
 =back
 
