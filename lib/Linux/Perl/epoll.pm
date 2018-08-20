@@ -54,9 +54,18 @@ sub new {
 my ($epoll_event_keys_ar, $epoll_event_pack);
 
 BEGIN {
+    my $arch_is_64bit = (8 == length pack 'L!');
+
     my @_epoll_event_src = (
         events => 'L',  #uint32_t
-        data   => 'L!', #pointer width
+        (
+            $arch_is_64bit
+                ? ( data => 'Q' )
+                : (
+                    q<> => 'xxxx',
+                    data   => 'L!',  #uint64_t
+                ),
+        ),
     );
 
     ($epoll_event_keys_ar, $epoll_event_pack) = Linux::Perl::EasyPack::split_pack_list(@_epoll_event_src);

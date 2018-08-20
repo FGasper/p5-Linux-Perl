@@ -90,7 +90,7 @@ sub _do_tests {
             },
         ],
         'received an event',
-    ) or diag explain @events;
+    ) or diag explain \@events;
 
     {
         sysread( $r, my $buf, 1 );  #flush buffer
