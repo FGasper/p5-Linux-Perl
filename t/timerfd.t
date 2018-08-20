@@ -132,7 +132,7 @@ sub _do_tests {
             clockid => 'REALTIME',
             flags => ['NONBLOCK'],
         )->settime(
-            value => 60,
+            value => time - 1,
             flags => ['ABSTIME'],
         );
 
