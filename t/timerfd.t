@@ -75,8 +75,8 @@ sub _do_tests {
 
     vec( my $rin = q<>, $obj->fileno(), 1 ) = 1;
 
-    is( $obj->read(), 1, 'read() - blocking' );
-    is( $obj->read(), 1, 'read() - blocking (again)' );
+    cmp_ok( $obj->read(), '>=', 1, 'read() - blocking' );
+    cmp_ok( $obj->read(), '>=', 1, 'read() - blocking (again)' );
 
     #----------------------------------------------------------------------
 
