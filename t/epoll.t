@@ -165,6 +165,26 @@ sub _do_tests {
     @events = $epl->wait( maxevents => 1, timeout => 0.1 );
     is_deeply( \@events, [], 'edge-triggered flag works' ) or diag explain \@events;
 
+    #----------------------------------------------------------------------
+
+    {
+        my $epl = $class->new();
+        my $fileno = $epl->[0];
+
+        undef $epl;
+
+        ok( (!-e "/proc/$$/fd/$fileno"), 'epoll FD closed on DESTROY' );
+
+        #----------------------------------------------------------------------
+
+        $epl = $class->new( flags => ['CLOEXEC'] );
+        $fileno = $epl->[0];
+
+        undef $epl;
+
+        ok( (!-e "/proc/$$/fd/$fileno"), 'epoll (CLOEXEC) FD closed on DESTROY' );
+    }
+
     return;
 }
 
