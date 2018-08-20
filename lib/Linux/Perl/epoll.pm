@@ -254,7 +254,7 @@ sub wait {
         $buf,
         0 + $opts{'maxevents'},
         0 + $timeout,
-        ( length($sigmask)
+        ( (defined($sigmask) && length($sigmask))
             ? ( $sigmask, length $sigmask )
             : (),
         ),
