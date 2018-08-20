@@ -177,9 +177,7 @@ sub settime {
 
 =head2 ($old_interval, $old_value) = I<OBJ>->gettime()
 
-Returns the old C<interval> and C<value>, in seconds. Note that,
-because of rounding errors, there may be minor discrepancies in
-fractional values between what you submitted and what is reported.
+Returns the old C<interval> and C<value>, in seconds.
 
 =cut
 
@@ -226,6 +224,7 @@ sub set_ticks {
         $buf = pack('V', $num_ticks) . ("\0" x 4);
     }
 
+    local $!;
     return 1 if ioctl( $self->[0], _TFD_IOC_SET_TICKS(), $buf );
 
     return !1 if $! == _ENOTTY();   #falsy

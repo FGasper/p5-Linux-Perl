@@ -25,7 +25,11 @@ Linux::Perl::epoll
 
 =head1 DESCRIPTION
 
-An thin interface on top of Linuxýs
+An interface to Linux’s “epoll” feature.
+
+Note that older kernel versions may not support all of the functionality
+documented here. Check your system’s epoll documentation (i.e.,
+C<man 7 epoll> and the various system calls’ pages) for full details.
 
 =cut
 
@@ -36,6 +40,21 @@ use Linux::Perl::ParseFlags;
 use Linux::Perl::SigSet;
 
 *_flag_CLOEXEC = \*Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
+
+=head1 METHODS
+
+=head2 I<CLASS>->new( %OPTS )
+
+Creates a new epoll instance. %OPTS are:
+
+=over
+
+=item C<flags> - Currently only C<CLOEXEC> is recognized.
+
+=back C<size> - Optional, and only useful on pre-2.6.8 kernels.
+See C<main 2 epoll_create> for more details.
+
+=cut
 
 sub new {
     my ($class, %opts) = @_;
@@ -110,11 +129,20 @@ BEGIN {
     ($epoll_event_keys_ar, $epoll_event_pack) = Linux::Perl::EasyPack::split_pack_list(@_epoll_event_src);
 }
 
-use constant {
-    _EPOLL_CTL_ADD => 1,
-    _EPOLL_CTL_DEL => 2,
-    _EPOLL_CTL_MOD => 3,
+#----------------------------------------------------------------------
 
+=head2 I<CLASS>->EVENT_NUMBER()
+
+Returns a (constant) hash reference that cross-references event names
+and their numbers. This is useful, e.g., for parsing events from the return
+of C<wait()>.
+
+The recognized event names are C<IN>, C<OUT>, C<RDHUP>, C<PRI>, C<ERR>,
+and C<HUP>.
+
+=cut
+
+use constant {
     EVENT_NUMBER => {
         IN => 1,
         OUT => 4,
@@ -122,6 +150,13 @@ use constant {
         PRI => 2,
         ERR => 8,
         HUP => 16,
+    },
+
+    _EPOLL_CTL_ADD => 1,
+    _EPOLL_CTL_DEL => 2,
+    _EPOLL_CTL_MOD => 3,
+
+    _EVENT_FLAGS => {
         ET => (1 << 31),
         ONESHOT => (1 << 30),
         WAKEUP => (1 << 29),
@@ -129,7 +164,7 @@ use constant {
     },
 };
 
-#use constant _event_name => { reverse %{ EVENT_NUMBER() } };
+#----------------------------------------------------------------------
 
 =head2 I<OBJ>->add( $FD_OR_FH, %OPTS )
 
@@ -138,13 +173,15 @@ Perl filehandle or a file descriptor number. %OPTS are:
 
 =over
 
-=item * C<events> - An array reference of events/switches. The
-recognized event names are: C<IN>, C<OUT>, C<RDHUP>, C<PRI>, C<ERR>,
-C<HUP>, C<ET>, C<ONESHOT>, C<WAKEUP>, and C<EXCLUSIVE>. Your kernel
+=item * C<events> - An array reference of events/switches. Each member
+is either a key from C<EVENT_NUMBER()> or one of the following
+switches: C<ET>, C<ONESHOT>, C<WAKEUP>, C<EXCLUSIVE>. Your kernel
 may not support all of those; check C<man 2 epoll_ctl> for details.
 
 =item * C<data> - Optional, an arbitrary number to store with the file
-descriptor. This defaults to the file descriptor.
+descriptor. This defaults to the file descriptor because this is the obvious
+way to correlate an event with its filehandle; however, you can set your own
+numeric value here if you’d rather.
 
 =back
 
@@ -158,7 +195,7 @@ sub add {
 
 =head2 I<OBJ>->modify( $FD_OR_FH, %OPTS )
 
-Same arguments as C<add()>.
+Same arguments as C<add()>; use this to update an existing epoll listener.
 
 =cut
 
@@ -177,7 +214,7 @@ sub _opts_to_event {
 
     my $events = 0;
     for my $evtname ( @{ $opts_hr->{'events'} } ) {
-        $events |= EVENT_NUMBER()->{$evtname} || do {
+        $events |= EVENT_NUMBER()->{$evtname} || _EVENT_FLAGS()->{$evtname} || do {
             die "Unknown event '$evtname'";
         };
     }
@@ -211,7 +248,7 @@ sub _add_or_modify {
 
 =head2 I<OBJ>->delete( $FD_OR_FH )
 
-Same arguments as C<add()>.
+Removes an epoll listener.
 
 =cut
 
@@ -265,7 +302,7 @@ reference.
 
 =back
 
-Each hash reference has C<events> and C<data>., analogous to the same
+Each hash reference has C<events> and C<data>, analogous to the same
 inputs as given to C<add()> above.
 
 =cut
@@ -313,20 +350,5 @@ sub wait {
 
     return @events;
 }
-
-#sub _events_to_ar {
-#    my ($events_num) = @_;
-#
-#    my $name_hr = _event_name();
-#
-#    my @events;
-#    for my $evt_num ( keys %$name_hr ) {
-#        if ($events_num & $evt_num) {
-#            push @events, $name_hr->{$evt_num};
-#        }
-#    }
-#
-#    return \@events;
-#}
 
 1;
