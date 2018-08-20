@@ -128,11 +128,14 @@ sub _do_tests {
     #----------------------------------------------------------------------
 
     {
+        my $time_minus_1 = time - 1;
+        diag "ABSTIME against time: $time_minus_1";
+
         my $obj = $class->new(
             clockid => 'REALTIME',
             flags => ['NONBLOCK'],
         )->settime(
-            value => time - 1,
+            value => $time_minus_1,
             flags => ['ABSTIME'],
         );
 
