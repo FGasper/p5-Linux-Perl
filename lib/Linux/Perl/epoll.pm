@@ -49,10 +49,12 @@ Creates a new epoll instance. %OPTS are:
 
 =over
 
-=item C<flags> - Currently only C<CLOEXEC> is recognized.
+=item * C<flags> - Currently only C<CLOEXEC> is recognized.
 
-=back C<size> - Optional, and only useful on pre-2.6.8 kernels.
+=item * C<size> - Optional, and only useful on pre-2.6.8 kernels.
 See C<main 2 epoll_create> for more details.
+
+=back
 
 =cut
 
