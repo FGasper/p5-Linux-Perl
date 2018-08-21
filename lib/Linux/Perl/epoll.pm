@@ -285,7 +285,7 @@ Waits for one or more events on the epoll. %OPTS are:
 =item * C<sigmask> - Optional, an array of signals to block. The signals
 can be specified either as names (e.g., C<INT>) or as numbers.
 See C<man 2 epoll_pwait> for why you might want to do this. (Note that Perl
-doesnýt really expect you to do signal blocking, so this may screw up in
+doesn’t really expect you to do signal blocking, so this may screw up in
 weird ways. If in doubt, avoid this option.)
 
 =back
