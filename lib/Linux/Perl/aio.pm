@@ -255,6 +255,8 @@ L<Linux::Perl::aio>’s C<create_control()> method.
 
 =cut
 
+use parent -norequire => 'Linux::Perl::Base::BitsTest';
+
 use Linux::Perl::Pointer ();
 
 use constant {
@@ -284,7 +286,7 @@ my ($iocb_keys_ar, $iocb_pack);
 
 BEGIN {
     my @_iocb_src = (
-        data => 'Q',    #aio_data
+        data => __PACKAGE__->_PACK_u64(),    #aio_data
 
         (
             Linux::Perl::Endian::SYSTEM_IS_BIG_ENDIAN()
@@ -304,11 +306,11 @@ BEGIN {
 
         #Would be a P, but we grab the P and do some byte arithmetic on it
         #for the case of a buffer_offset.
-        buf => 'Q',
+        buf => __PACKAGE__->_PACK_u64(),
 
-        nbytes => 'Q',
+        nbytes => __PACKAGE__->_PACK_u64(),
 
-        offset => 'q',
+        offset => __PACKAGE__->_PACK_i64(),
 
         reserved2 => 'x8',
 
