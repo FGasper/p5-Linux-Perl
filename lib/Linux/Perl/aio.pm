@@ -45,14 +45,16 @@ use Linux::Perl;
 use Linux::Perl::EasyPack;
 use Linux::Perl::TimeSpec;
 
+use parent qw( Linux::Perl::Base::BitsTest );
+
 my ($io_event_keys_ar, $io_event_pack, $io_event_size);
 
 BEGIN {
     my @_io_event_src = (
-        data => 'Q',
-        obj  => 'Q',
-        res  => 'q',
-        res2 => 'q',
+        data => __PACKAGE__->_PACK_u64(),
+        obj  => __PACKAGE__->_PACK_u64(),
+        res  => __PACKAGE__->_PACK_i64(),
+        res2 => __PACKAGE__->_PACK_i64(),
     );
 
     ($io_event_keys_ar, $io_event_pack) = Linux::Perl::EasyPack::split_pack_list(@_io_event_src);
@@ -78,11 +80,11 @@ sub new {
         $class = Linux::Perl::ArchLoader::get_arch_module($class);
     }
 
-    my $context = pack 'Q';
+    my $context = "\0" x 8;
 
     Linux::Perl::call( $class->NR_io_setup(), 0 + $nr_events, $context );
 
-    $context = unpack 'Q', $context;
+    $context = unpack $class->_PACK_u64(), $context;
 
     return bless \$context, $class;
 }

@@ -16,13 +16,13 @@ similar logic to implement. This base class contains that logic.
 
 =cut
 
+use parent qw( Linux::Perl::Base::BitsTest );
+
 use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::Endian;
 
 *_flag_CLOEXEC = \*Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
 *_flag_NONBLOCK = \*Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
-
-use constant _PERL_CAN_64BIT => !!do { local $@; eval { pack 'Q' } };
 
 #----------------------------------------------------------------------
 
@@ -49,7 +49,7 @@ my ($big, $low);
 sub _parse64 {
     my ($buf) = @_;
 
-    if (_PERL_CAN_64BIT) {
+    if (__PACKAGE__->_PERL_CAN_64BIT()) {
         $low = unpack('Q', $buf);
     }
     else {
