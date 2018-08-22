@@ -84,7 +84,7 @@ use warnings;
 
 use Linux::Perl::X ();
 
-our $VERSION = '0.08-TRIAL6';
+our $VERSION = '0.08-TRIAL7';
 
 sub call {
     local $!;
