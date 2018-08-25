@@ -1,5 +1,9 @@
 Revision history for Perl module Linux::Perl
 
+0.09
+- Attempt i686 compatibility.
+- fix LICENSE file
+
 0.08
 - Add epoll and timerfd
 
