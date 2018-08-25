@@ -1,5 +1,8 @@
 Revision history for Perl module Linux::Perl
 
+0.10
+- fix LICENSE file (again)
+
 0.09
 - Attempt i686 compatibility.
 - fix LICENSE file
