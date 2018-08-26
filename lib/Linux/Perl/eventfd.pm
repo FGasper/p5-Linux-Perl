@@ -89,8 +89,6 @@ sub new {
 
     my $initval = 0 + ( $opts{'initval'} || 0 );
 
-    my $is_cloexec;
-
     my $flags = Linux::Perl::ParseFlags::parse($arch_module, $opts{'flags'});
 
     my $call = 'NR_' . ($flags ? 'eventfd2' : 'eventfd');
