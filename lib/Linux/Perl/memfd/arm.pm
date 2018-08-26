@@ -1,4 +1,4 @@
-package Linux::Perl::memfd::x86_64;
+package Linux::Perl::memfd::arm;
 
 use strict;
 use warnings;
