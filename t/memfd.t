@@ -6,6 +6,10 @@ use autodie;
 
 use Test::More;
 use Test::FailWarnings;
+use Test::SharedFork;
+
+use FindBin;
+use lib "$FindBin::Bin/lib";
 
 use LP_EnsureArch;
 
@@ -13,32 +17,92 @@ LP_EnsureArch::ensure_support('memfd');
 
 use Linux::Perl::memfd;
 
-my $memfd = Linux::Perl::memfd->new(
-    flags => ['CLOEXEC', 'ALLOW_SEALING'],
-    #huge_page_size => '64KB',
-);
-
 #----------------------------------------------------------------------
-#my $GET_SEALS = 1024 + 10;
-#stat "==== GET SEALS";
-#my $seals = fcntl( $memfd, $GET_SEALS, 0 );
-#diag "seals: $seals";
 
-truncate( $memfd, 16 );
+for my $generic_yn ( 0, 1 ) {
+    if ( my $pid = fork ) {
+        waitpid $pid, 0;
+        die if $?;
+    }
+    else {
+        eval {
+            my $class = 'Linux::Perl::memfd';
+            if (!$generic_yn) {
+                require Linux::Perl::ArchLoader;
+                $class = Linux::Perl::ArchLoader::get_arch_module($class);
+            };
 
-my $pid = fork or do {
-    syswrite( $memfd, 'hahaha' );
-    exit;
-};
+            diag "----------- CLASS: $class -----------";
 
-waitpid $pid, 0;
+            _do_tests($class);
+        };
+        die if $@;
+        exit;
+    }
+}
 
-sysseek( $memfd, 0, 0 );
+sub _do_tests {
+    my ($class) = @_;
 
-sysread( $memfd, my $buf, 16 );
+    my $memfd = $class->new(
+        name => 'this is my name',
+        flags => ['CLOEXEC', 'ALLOW_SEALING'],
+        #huge_page_size => '64KB',
+    );
 
-$buf =~ tr<\0><>d;
+    my $pid = fork or do {
+        syswrite( $memfd, 'hahaha' );
+        exit;
+    };
 
-is( $buf, 'hahaha', 'transfer across memfd' ) or diag explain $buf;
+    waitpid $pid, 0;
+
+    sysseek( $memfd, 0, 0 );
+
+    sysread( $memfd, my $buf, 16 );
+
+    is( $buf, 'hahaha', 'transfer across memfd' ) or diag explain $buf;
+
+    my $fileno = fileno $memfd;
+
+    like(
+        CORE::readlink("/proc/$$/fd/$fileno"),
+        qr<memfd.*this is my name>,
+        'given name is respected',
+    );
+
+    my $link = `$^X -e'print readlink("/proc/\$\$/fd/$fileno")'`;
+    ok( !$link, 'CLOEXEC flag is respected' );
+
+    undef $memfd;
+
+    ok( !CORE::readlink("/proc/$$/fd/$fileno"), 'garbage-collect (CLOEXEC flag)' );
+
+    #----------------------------------------------------------------------
+
+    $memfd = $class->new();
+    $fileno = fileno( $memfd );
+
+    $link = `$^X -e'print readlink("/proc/\$\$/fd/$fileno")'`;
+    ok( !$link, 'implicit CLOEXEC is respected' );
+
+    undef $memfd;
+
+    ok( !CORE::readlink("/proc/$$/fd/$fileno"), 'garbage-collect (implicit CLOEXEC)' );
+
+    #----------------------------------------------------------------------
+
+    {
+        local $^F = 1000;
+
+        my $memfd = $class->new( name => 'still alive' );
+        $fileno = fileno($memfd);
+
+        my $link = `$^X -e'print readlink("/proc/\$\$/fd/$fileno")'`;
+        like( $link, qr<still alive>, 'non-CLOEXEC works' );
+    }
+
+    return;
+}
 
 done_testing();

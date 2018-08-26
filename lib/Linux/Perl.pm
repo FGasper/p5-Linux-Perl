@@ -86,10 +86,12 @@ use Linux::Perl::X ();
 
 our $VERSION = '0.10';
 
+our @_TOLERATE_ERRNO;
+
 sub call {
     local $!;
     my $ok = syscall(0 + $_[0], @_[1 .. $#_]);
-    if ($ok == -1) {
+    if ($ok == -1 && !grep { $_ == $! } @_TOLERATE_ERRNO) {
         die Linux::Perl::X->create('Call', $_[0], $!);
     }
 
