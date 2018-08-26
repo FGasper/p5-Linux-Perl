@@ -7,6 +7,10 @@ use autodie;
 use Test::More;
 use Test::FailWarnings;
 
+use LP_EnsureArch;
+
+LP_EnsureArch::ensure_support('memfd');
+
 use Linux::Perl::memfd;
 
 my $memfd = Linux::Perl::memfd->new(
