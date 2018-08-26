@@ -1,9 +1,12 @@
 Revision history for Perl module Linux::Perl
 
-0.10
+0.11
+- Add memfd and mq (POSIX message queueing)
+
+0.10 Fri Aug 24 2018
 - fix LICENSE file (again)
 
-0.09
+0.09 Fri Aug 24 2018
 - Attempt i686 compatibility.
 - fix LICENSE file
 
