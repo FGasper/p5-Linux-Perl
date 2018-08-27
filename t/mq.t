@@ -83,8 +83,10 @@ sub _do_tests {
 
     $mq->blocking(1);
 
+    my $received_msg = "\0" x 20;
+
     is(
-        $mq->receive( msgsize => 20 ),
+        $mq->receive( \$received_msg ),
         undef,
         'receive() gives undef when not ready (blocking)',
     );
@@ -98,7 +100,7 @@ sub _do_tests {
     );
 
     is(
-        $mq->receive( msgsize => 20 ),
+        $mq->receive( \$received_msg ),
         undef,
         'receive() gives undef when not ready (non-blocking)',
     );
@@ -108,7 +110,7 @@ sub _do_tests {
         'send() truthy when it works',
     );
 
-    my $msg = $mq->receive( msgsize => 20 );
+    my $msg = $mq->receive( \$received_msg );
 
     is( $msg, 'Hello.', 'receive()' );
 

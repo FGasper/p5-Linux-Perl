@@ -11,21 +11,19 @@ Linux::Perl::sigprocmask
 
 =head1 SYNOPSIS
 
-    Linux::Perl::sigprocmask->block( 2, 'USR1' );
-
+    # These all return the complete former signal mask (as numbers)
+    # when called in list context.
     @oldlist = Linux::Perl::sigprocmask->block( 2, 'USR1' );
+
+    Linux::Perl::sigprocmask->block( 2, 'USR1' );
 
     Linux::Perl::sigprocmask->unblock( 2, 'USR1' );
 
-    @oldlist = Linux::Perl::sigprocmask->unblock( 2, 'USR1' );
-
     Linux::Perl::sigprocmask->set( 2, 'USR1' );
-
-    @oldlist = Linux::Perl::sigprocmask->set( 2, 'USR1' );
 
 =head1 DESCRIPTION
 
-An implementation of the kernel's logic to set the signal mask.
+An implementation of the kernel’s logic to set the signal mask.
 
 =cut
 

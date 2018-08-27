@@ -252,7 +252,7 @@ sub getattr {
 
 =head2 I<OBJ>->blocking()
 
-Imitates L<IO::Handle>'s method of the same name.
+Imitates L<IO::Handle>’s method of the same name.
 Returns a boolean that indicates whether the message queue handle
 is blocking.
 
@@ -336,18 +336,16 @@ sub send {
     return 1;
 }
 
-=head2 I<OBJ>->receive( %OPTS )
+=head2 I<OBJ>->receive( \$BUFFER, %OPTS )
 
 Attempts to slurp a message from the queue.
 
-Returns the message on success; if there is no message available,
-undef is returned. Any other failure prompts an exception.
+$BUFFER is a pre-initialized buffer where the message will be stored.
+It B<must> be at least as long as the message queue’s C<msgsize>.
+
+%OPTS are:
 
 =over
-
-=item * C<msgsize> - The size of the message buffer to create.
-This number must be no less than the message queue's maximum message
-size, but there is no reason for it to be any greater.
 
 =item * C<prio> - Optional, the receive priority. Defaults to 0
 (highest priority).
@@ -356,12 +354,13 @@ size, but there is no reason for it to be any greater.
 
 =back
 
+Returns the message length on success; if there is no message available,
+undef is returned. Any other failure prompts an exception.
+
 =cut
 
 sub receive {
-    my ($self, %opts) = @_;
-
-    my $buf = "\0" x $opts{'msgsize'};
+    my ($self, $buffer_sr, %opts) = @_;
 
     local @Linux::Perl::_TOLERATE_ERRNO = (
         _EAGAIN(),
@@ -371,14 +370,12 @@ sub receive {
     my $len = Linux::Perl::call(
         $self->NR_mq_timedreceive(),
         0 + $self->[0],
-        $buf,
-        0 + $opts{'msgsize'},
+        $$buffer_sr,
+        length $$buffer_sr,
         _send_receive_prio_timeout(\%opts),
     );
 
-    return undef if $len == -1;
-
-    return substr($buf, 0, $len);
+    return( ($len != -1) ? $len : undef );
 }
 
 #----------------------------------------------------------------------
