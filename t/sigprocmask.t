@@ -54,7 +54,7 @@ sub _do_tests {
     diag 'unblocking USR1';
 
     pipe(my $r, my $w);
-    vec( my $rin, fileno($r), 1 ) = 1;
+    vec( my $rin = q<>, fileno($r), 1 ) = 1;
 
     local $SIG{'USR1'} = sub { syswrite($w, 'x') };
 
@@ -77,7 +77,7 @@ sub _do_tests {
     _confirm_non_receipt('USR2');
 
     pipe($r, $w);
-    vec( $rin, fileno($r), 1 ) = 1;
+    vec( $rin = q<>, fileno($r), 1 ) = 1;
 
     local $SIG{'USR2'} = sub { syswrite($w, 'x') };
 
