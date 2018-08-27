@@ -63,7 +63,7 @@ sub new {
 
     local ($!, $^E);
 
-    my $arch_module = $class->can('NR_epoll_create') && $class;
+    my $arch_module = ($class eq __PACKAGE__) || $class;
     $arch_module ||= do {
         require Linux::Perl::ArchLoader;
         Linux::Perl::ArchLoader::get_arch_module($class);
@@ -282,11 +282,9 @@ Waits for one or more events on the epoll. %OPTS are:
 
 =item * C<timeout> - in seconds
 
-=item * C<sigmask> - Optional, an array of signals to block. The signals
-can be specified either as names (e.g., C<INT>) or as numbers.
-See C<man 2 epoll_pwait> for why you might want to do this. (Note that Perl
-doesn’t really expect you to block signals directly, so this may screw
-things up for you in weird ways. If in doubt, avoid this option.)
+=item * C<sigmask> - Optional, an array of signals to block as part of
+this function call. Give signals either as names (e.g., C<INT>) or as numbers.  See C<man 2 epoll_pwait> for why you might want to do this.  Also see
+L<Linux::Perl::sigprocmask> for an easy, light way to block signals.
 
 =back
 

@@ -43,6 +43,14 @@ Each family of system calls lives in its own namespace under C<Linux::Perl>:
 
 =item * L<Linux::Perl::epoll>
 
+=item * L<Linux::Perl::memfd>
+
+=item * L<Linux::Perl::signalfd>
+
+=item * L<Linux::Perl::sigprocmask>
+
+=item * L<Linux::Perl::mq>
+
 =back
 
 The distribution contains a number of other modules, none of which is
