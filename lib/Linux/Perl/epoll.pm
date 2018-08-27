@@ -63,7 +63,7 @@ sub new {
 
     local ($!, $^E);
 
-    my $arch_module = ($class eq __PACKAGE__) || $class;
+    my $arch_module = ($class ne __PACKAGE__) && $class;
     $arch_module ||= do {
         require Linux::Perl::ArchLoader;
         Linux::Perl::ArchLoader::get_arch_module($class);

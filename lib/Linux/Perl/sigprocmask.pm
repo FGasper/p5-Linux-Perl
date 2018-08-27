@@ -97,7 +97,7 @@ sub _do {
 
     my $oldmask = "\0" x length($mask);
 
-    my $arch_module = $class->can('NR_signalfd') && $class;
+    my $arch_module = ($class ne __PACKAGE__) && $class;
     $arch_module ||= do {
         require Linux::Perl::ArchLoader;
         Linux::Perl::ArchLoader::get_arch_module($class);
