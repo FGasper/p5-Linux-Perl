@@ -110,9 +110,9 @@ sub _do_tests {
         'send() truthy when it works',
     );
 
-    my $msg = $mq->receive( \$received_msg );
+    my $msg_len = $mq->receive( \$received_msg );
 
-    is( $msg, 'Hello.', 'receive()' );
+    is( substr($received_msg, 0, $msg_len), 'Hello.', 'receive()' );
 
     undef $mq;
 
