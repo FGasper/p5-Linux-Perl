@@ -29,6 +29,8 @@ for my $in_stat ( qw( user_instances user_watches queued_events ) ) {
     diag "$node: $val";
 }
 
+diag q<> . `for foo in /proc/*/fd/*; do readlink -f \$foo; done | grep ':inotify' | sort | uniq -c | sort -nr | awk '{print; s+=\$1} END {print s}'`;
+
 for my $generic_yn ( 0, 1 ) {
     if ( my $pid = fork ) {
         waitpid $pid, 0;
