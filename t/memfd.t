@@ -15,7 +15,7 @@ use LP_EnsureArch;
 
 LP_EnsureArch::ensure_support('memfd');
 
-use Linux::Perl::memfd;
+use_ok('Linux::Perl::memfd');
 
 #----------------------------------------------------------------------
 

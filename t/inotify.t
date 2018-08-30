@@ -92,6 +92,8 @@ sub _do_tests {
 
             diag "inotify instances for UID $>:";
             diag q<> . `for foo in /proc/*/fd/*; do readlink -f \$foo; done | grep ':inotify' | sort | uniq -c | sort -nr | awk '{print; s+=\$1} END {print s}'`;
+            diag q<> . `ps aux`;
+
             return;
         }
 
