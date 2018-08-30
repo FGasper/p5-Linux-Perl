@@ -233,6 +233,13 @@ sub read {
             $evt{'name'} =~ tr<\0><>d if $evt{'name'};
 
             push @events, \%evt;
+
+            # Perl 5.16 and previous choke with:
+            #
+            #   '/' must follow a numeric type in unpack
+            #
+            # » unless we avoid unpack() on an empty string.
+            last if !$buf;
         }
     }
 
