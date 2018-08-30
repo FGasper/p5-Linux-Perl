@@ -56,12 +56,13 @@ Each family of system calls lives in its own namespace under C<Linux::Perl>:
 =back
 
 The distribution contains a number of other modules, none of which is
-intended for outside use.
+currently intended for outside use.
 
 =head1 PLATFORM-SPECIFIC INVOCATION
 
 Each Linux::Perl system call implementation can be called with a
-platform-neutral syntax as well as with a platform-specific one:
+platform-neutral syntax as well as with a platform-specific one;
+for example:
 
     my $efd = Linux::Perl::eventfd->new();
 
@@ -72,20 +73,13 @@ L<Config> to determine the current platform.
 
 =head1 PLATFORM SUPPORT
 
-The following platforms are supported:
-
-=over
-
-=item * x86_64 (i.e., 64-bit Intel/AMD)
-
-=item * arm (e.g., Raspberry Pi)
-
-=back
-
-Note that a 64-bit Perl is assumed/required.
+C<x86_64> and C<arm> are the best-supported platforms. Limited support
+is included for C<i686> and C<i386>.
 
 Support for adding new platforms just involves adding new modules with the
 necessary constants to the distribution.
+
+Note also that a 64-bit Perl is generally assumed.
 
 =cut
 
