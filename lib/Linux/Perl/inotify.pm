@@ -206,7 +206,12 @@ Reads events from the inotify instance. Each event is returned as
 a hash reference with members C<wd>, C<mask>, C<cookie>, and C<name>.
 See C<man 7 inotify> for details about what these mean.
 
-An empty return indicates a read failure; C<$!> will contain the
+Note that if the underlying inotify object is not set C<NONBLOCK>
+then this call will block until there is an inotify event to read.
+
+In scalar context this returns the number of events that happened.
+
+An empty return here indicates a read failure; C<$!> will contain the
 usual information about the failure.
 
 =cut
