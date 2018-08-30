@@ -29,25 +29,27 @@ Each family of system calls lives in its own namespace under C<Linux::Perl>:
 
 =over
 
+=item * L<Linux::Perl::epoll>
+
+=item * L<Linux::Perl::inotify>
+
 =item * L<Linux::Perl::eventfd>
-
-=item * L<Linux::Perl::aio>
-
-=item * L<Linux::Perl::uname>
-
-=item * L<Linux::Perl::getdents>
 
 =item * L<Linux::Perl::getrandom>
 
 =item * L<Linux::Perl::timerfd>
-
-=item * L<Linux::Perl::epoll>
 
 =item * L<Linux::Perl::memfd>
 
 =item * L<Linux::Perl::signalfd>
 
 =item * L<Linux::Perl::sigprocmask>
+
+=item * L<Linux::Perl::aio>
+
+=item * L<Linux::Perl::uname>
+
+=item * L<Linux::Perl::getdents>
 
 =item * L<Linux::Perl::mq>
 
