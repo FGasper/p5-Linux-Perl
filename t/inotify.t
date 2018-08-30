@@ -22,15 +22,6 @@ use Socket;
 
 use Linux::Perl::inotify;
 
-for my $in_stat ( qw( user_instances user_watches queued_events ) ) {
-    my $node = "/proc/sys/fs/inotify/max_$in_stat";
-    my $val = File::Slurp::read_file($node);
-
-    diag "$node: $val";
-}
-
-diag q<> . `for foo in /proc/*/fd/*; do readlink -f \$foo; done | grep ':inotify' | sort | uniq -c | sort -nr | awk '{print; s+=\$1} END {print s}'`;
-
 for my $generic_yn ( 0, 1 ) {
     if ( my $pid = fork ) {
         waitpid $pid, 0;
@@ -83,7 +74,30 @@ sub _do_tests {
 
     my $dir = File::Temp::tempdir( CLEANUP => 1 );
 
-    my $inotify = $class->new( flags => [ 'NONBLOCK' ] );
+    my $inotify = eval {
+        $class->new( flags => [ 'NONBLOCK' ] );
+    };
+    if (!$inotify) {
+        my $err = $@ or die "no inotify but no error?";
+
+        if ($err->get('error') == Errno::EMFILE()) {
+            warn;
+
+            for my $in_stat ( qw( user_instances user_watches queued_events ) ) {
+                my $node = "/proc/sys/fs/inotify/max_$in_stat";
+                my $val = File::Slurp::read_file($node);
+
+                diag "$node: $val";
+            }
+
+            diag "inotify instances for UID $>:";
+            diag q<> . `for foo in /proc/*/fd/*; do readlink -f \$foo; done | grep ':inotify' | sort | uniq -c | sort -nr | awk '{print; s+=\$1} END {print s}'`;
+            return;
+        }
+
+        local $@ = $err;
+        die;
+    }
 
     my $wd = $inotify->add( path => $dir, events => [ 'ONLYDIR', 'DONT_FOLLOW', 'ALL_EVENTS' ] );
 
