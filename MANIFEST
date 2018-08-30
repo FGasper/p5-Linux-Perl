@@ -34,6 +34,7 @@ lib/Linux/Perl/eventfd/i686.pm
 lib/Linux/Perl/eventfd/x86_64.pm
 lib/Linux/Perl/getdents.pm
 lib/Linux/Perl/getdents/arm.pm
+lib/Linux/Perl/getdents/i686.pm
 lib/Linux/Perl/getdents/x86_64.pm
 lib/Linux/Perl/getrandom.pm
 lib/Linux/Perl/getrandom/arm.pm
