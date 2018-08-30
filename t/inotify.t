@@ -81,7 +81,7 @@ sub _do_tests {
         my $err = $@ or die "no inotify but no error?";
 
         if ($err->get('error') == Errno::EMFILE()) {
-            warn;
+            diag "$@";
 
             for my $in_stat ( qw( user_instances user_watches queued_events ) ) {
                 my $node = "/proc/sys/fs/inotify/max_$in_stat";

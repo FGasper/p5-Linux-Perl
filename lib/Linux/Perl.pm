@@ -88,7 +88,7 @@ use warnings;
 
 use Linux::Perl::X ();
 
-our $VERSION = '0.13-TRIAL4';
+our $VERSION = '0.13-TRIAL5';
 
 our @_TOLERATE_ERRNO;
 
