@@ -3,6 +3,28 @@ package Linux::Perl::inotify;
 use strict;
 use warnings;
 
+=encoding utf-8
+
+=head1 NAME
+
+Linux::Perl::inotify
+
+=head1 SYNOPSIS
+
+    my $inf = Linux::Perl::inotify->new();
+
+    my $wd = $inf->add( path => $path, events => ['CREATE', 'ONLYDIR'] );
+
+    my @events = $inf->read();
+
+    $inf->remove($wd);
+
+=head1 DESCRIPTION
+
+This is an interface to Linuxýs Ûinotifyû feature.
+
+=cut
+
 use Linux::Perl;
 use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::EasyPack;
@@ -11,7 +33,7 @@ use Linux::Perl::ParseFlags;
 *_flag_CLOEXEC = \*Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
 *_flag_NONBLOCK = \*Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
 
-use constant EVENT_NUMBER => {
+use constant _simple_event_num => {
     ACCESS => 1,
     MODIFY => 2,
     ATTRIB => 4,
@@ -24,20 +46,27 @@ use constant EVENT_NUMBER => {
     DELETE => 512,
     DELETE_SELF => 1024,
     MOVE_SELF => 2048,
+};
 
+use constant _read_only_event_num => (
     UNMOUNT => 0x2000,
     Q_OVERFLOW => 0x4000,
     IGNORED => 0x8000,
     ISDIR => 0x40000000,
-};
+);
 
-use constant _shorthand_event_num => {
-    CLOSE => EVENT_NUMBER()->{'CLOSE_WRITE'} | EVENT_NUMBER()->{'CLOSE_NOWRITE'},
-    MOVE => EVENT_NUMBER()->{'MOVED_FROM'} | EVENT_NUMBER()->{'MOVED_TO'},
+use constant _shorthand_event_num => (
+    CLOSE => _simple_event_num()->{'CLOSE_WRITE'} | _simple_event_num()->{'CLOSE_NOWRITE'},
+    MOVE => _simple_event_num()->{'MOVED_FROM'} | _simple_event_num()->{'MOVED_TO'},
+);
+
+use constant _event_input_opts => {
+    %{ _simple_event_num() },
+    _shorthand_event_num(),
 
     ALL_EVENTS => do {
         my $num = 0;
-        $num |= $_ for values %{ EVENT_NUMBER() };
+        $num |= $_ for values %{ _simple_event_num() };
         $num;
     },
 };
@@ -50,6 +79,41 @@ use constant _event_opts => {
     MASK_ADD => 0x20000000,
     ONESHOT => 0x80000000,
 };
+
+=head1 METHODS
+
+=head2 I<CLASS>->EVENT_NUMBER()
+
+A hash reference of event names to numeric values. The member keys
+are: C<ACCESS>, C<MODIFY>, C<ATTRIB>, C<CLOSE_WRITE>, C<CLOSE_NOWRITE>,
+C<OPEN>, C<MOVED_FROM>, C<MOVED_TO>, C<CREATE>, C<DELETE>,
+C<DELETE_SELF>, C<MOVE_SELF>, C<UNMOUNT>, C<Q_OVERFLOW>, C<IGNORED>,
+C<ISDIR>, C<CLOSE>, and C<MOVE>.
+
+See C<man 7 inotify> for details of what these mean.
+
+=cut
+
+use constant EVENT_NUMBER => {
+    %{ _simple_event_num() },
+    _read_only_event_num(),
+    _shorthand_event_num(),
+};
+
+=head2 I<CLASS>->new( %OPTS )
+
+Instantiates a new inotify instance.
+
+%OPTS is:
+
+=over
+
+=item * C<flags> - Optional, an array reference of either or both of
+C<NONBLOCK> and/or C<CLOEXEC>.
+
+=back
+
+=cut
 
 sub new {
     my ($class, %opts) = @_;
@@ -76,17 +140,76 @@ sub new {
     return bless [$fd, $fh], $class;
 }
 
+#----------------------------------------------------------------------
+
+=head2 $wd = I<OBJ>->add( %OPTS )
+
+Adds to an inotify instance and returns a watch descriptor.
+See C<man 2 inotify_add_watch> for more information.
+
+%OPTS is:
+
+=over
+
+=item * C<path> - The filesystem path to monitor.
+
+=item * C<events> - An array reference of events to monitor for.
+Recognized events are: C<ACCESS>, C<MODIFY>, C<ATTRIB>,
+C<CLOSE_WRITE>, C<CLOSE_NOWRITE>, C<OPEN>, C<MOVED_FROM>,
+C<MOVED_TO>, C<CREATE>, C<DELETE>, C<DELETE_SELF>, C<MOVE_SELF>,
+C<CLOSE>, C<MOVE>, C<ALL_EVENTS>, C<ONLYDIR>, C<DONT_FOLLOW>,
+C<EXCL_UNLINK>, C<MASK_CREATE>, C<MASK_ADD>, and C<ONESHOT>.
+
+=back
+
+=cut
+
+sub add {
+    my ($self, %opts) = @_;
+
+    my $path = $opts{'path'};
+    if (!defined $path || !length $path) {
+        die 'Need path!';
+    }
+
+    my $events_mask = Linux::Perl::EventFlags::events_flags_to_num(
+        $opts{'events'},
+        _event_input_opts(),
+        _event_opts(),
+    );
+
+    return Linux::Perl::call(
+        $self->NR_inotify_add_watch(),
+        0 + $self->[0],
+        $path,
+        0 + $events_mask,
+    );
+}
+
+#----------------------------------------------------------------------
+
 my ($inotify_keys_ar, $inotify_pack, $inotify_sizeof);
 BEGIN {
     ($inotify_keys_ar, $inotify_pack) = Linux::Perl::EasyPack::split_pack_list(
         wd => 'i!',     #int
-        events => 'L',  #uint32_t
+        mask => 'L',    #uint32_t
         cookie => 'L',  #uint32_t
         name => 'L/a',  #uint32_t & char[]
     );
 
     $inotify_sizeof = length pack $inotify_pack;
 }
+
+=head2 @events = I<OBJ>->read()
+
+Reads events from the inotify instance. Each event is returned as
+a hash reference with members C<wd>, C<mask>, C<cookie>, and C<name>.
+See C<man 7 inotify> for details about what these mean.
+
+An empty return indicates a read failure; C<$!> will contain the
+usual information about the failure.
+
+=cut
 
 sub read {
     my ($self) = @_;
@@ -111,28 +234,13 @@ sub read {
     return @events;
 }
 
-sub add {
-    my ($self, %opts) = @_;
+#----------------------------------------------------------------------
 
-    my $path = $opts{'path'};
-    if (!defined $path || !length $path) {
-        die 'Need path!';
-    }
+=head2 I<OBJ>->remove( $WD )
 
-    my $events_mask = Linux::Perl::EventFlags::events_flags_to_num(
-        $opts{'events'},
-        EVENT_NUMBER(),
-        _shorthand_event_num(),
-        _event_opts(),
-    );
+Analogous to C<man 2 inotify_rm_watch>.
 
-    return Linux::Perl::call(
-        $self->NR_inotify_add_watch(),
-        0 + $self->[0],
-        $path,
-        0 + $events_mask,
-    );
-}
+=cut
 
 sub remove {
     my ($self, $wd) = @_;

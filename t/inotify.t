@@ -46,11 +46,36 @@ sub _do_tests {
 
     note "Using class: $class (PID $$)";
 
+    cmp_bag(
+        [ keys %{ $class->EVENT_NUMBER() } ],
+        [
+            'ACCESS',
+            'MODIFY',
+            'ATTRIB',
+            'CLOSE_WRITE',
+            'CLOSE_NOWRITE',
+            'OPEN',
+            'MOVED_FROM',
+            'MOVED_TO',
+            'CREATE',
+            'DELETE',
+            'DELETE_SELF',
+            'MOVE_SELF',
+            'UNMOUNT',
+            'Q_OVERFLOW',
+            'IGNORED',
+            'ISDIR',
+            'CLOSE',
+            'MOVE',
+        ],
+        'all expected EVENT_NUMBER() members',
+    ) or diag explain $class->EVENT_NUMBER();
+
     my $dir = File::Temp::tempdir( CLEANUP => 1 );
 
     my $inotify = $class->new( flags => [ 'NONBLOCK' ] );
 
-    my $wd = $inotify->add( path => $dir, events => [ 'ALL_EVENTS' ] );
+    my $wd = $inotify->add( path => $dir, events => [ 'ONLYDIR', 'DONT_FOLLOW', 'ALL_EVENTS' ] );
 
     $inotify->read();
 
@@ -60,41 +85,74 @@ sub _do_tests {
 
     chmod 0765, $dir;   # a quasi-nonsensical mode
 
-    unlink "$dir/thefile";
-    rmdir $dir;
+    rename "$dir/thefile" => "$dir/thefile2";
+
+    unlink "$dir/thefile2";
+
+    $inotify->remove($wd);
+
+    # This will NOT be picked up by the inotify because
+    # of the remove() just above.
+    do { open my $wfh, '>', "$dir/thefile" };
 
     my @events = $inotify->read();
 
-    cmp_deeply(
+    cmp_bag(
         \@events,
         [
             {
                 wd => $wd,
                 cookie => 0,
-                events => $inotify->EVENT_NUMBER()->{'CREATE'},
+                mask => $inotify->EVENT_NUMBER()->{'CREATE'},
                 name => 'thefile',
             },
             {
                 wd => $wd,
                 cookie => 0,
-                events => $inotify->EVENT_NUMBER()->{'OPEN'},
+                mask => $inotify->EVENT_NUMBER()->{'OPEN'},
                 name => 'thefile',
             },
             {
                 wd => $wd,
                 cookie => 0,
-                events => $inotify->EVENT_NUMBER()->{'ATTRIB'} | $inotify->EVENT_NUMBER()->{'ISDIR'},
+                mask => $inotify->EVENT_NUMBER()->{'ATTRIB'} | $inotify->EVENT_NUMBER()->{'ISDIR'},
                 name => q<>,
             },
             {
                 wd => $wd,
-                cookie => 0,
-                events => $inotify->EVENT_NUMBER()->{'DELETE'},
+                cookie => ignore(),
+                mask => $inotify->EVENT_NUMBER()->{'MOVED_FROM'},
                 name => 'thefile',
+            },
+            {
+                wd => $wd,
+                cookie => ignore(),
+                mask => $inotify->EVENT_NUMBER()->{'MOVED_TO'},
+                name => 'thefile2',
+            },
+            {
+                wd => $wd,
+                cookie => 0,
+                mask => $inotify->EVENT_NUMBER()->{'DELETE'},
+                name => 'thefile2',
+            },
+            {
+                wd => $wd,
+                cookie => 0,
+                mask => $inotify->EVENT_NUMBER()->{'IGNORED'},
+                name => q<>,
             },
         ],
         'create chmod, unlink, rmdir events',
     ) or diag explain \@events;
+
+    my @move_evts = grep { $_->{'mask'} & $inotify->EVENT_NUMBER()->{'MOVE'} } @events;
+
+    is(
+        $move_evts[0]{'cookie'},
+        $move_evts[1]{'cookie'},
+        'move cookie values match',
+    );
 
     return;
 }
