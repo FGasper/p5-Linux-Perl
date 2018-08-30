@@ -11,6 +11,7 @@ use LP_EnsureArch;
 LP_EnsureArch::ensure_support('inotify');
 
 use File::Temp;
+use File::Slurp;
 
 use Test::More;
 use Test::Deep;
@@ -20,6 +21,13 @@ use Test::SharedFork;
 use Socket;
 
 use Linux::Perl::inotify;
+
+for my $in_stat ( qw( user_instances user_watches queued_events ) ) {
+    my $node = "/proc/sys/fs/inotify/max_$in_stat";
+    my $val = File::Slurp::read_file($node);
+
+    diag "$node: $val";
+}
 
 for my $generic_yn ( 0, 1 ) {
     if ( my $pid = fork ) {

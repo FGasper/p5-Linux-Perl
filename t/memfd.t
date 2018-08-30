@@ -44,11 +44,26 @@ for my $generic_yn ( 0, 1 ) {
 sub _do_tests {
     my ($class) = @_;
 
-    my $memfd = $class->new(
-        name => 'this is my name',
-        flags => ['CLOEXEC', 'ALLOW_SEALING'],
-        #huge_page_size => '64KB',
-    );
+    my $memfd = eval {
+        $class->new(
+            name => 'this is my name',
+            flags => ['CLOEXEC', 'ALLOW_SEALING'],
+            #huge_page_size => '64KB',
+        );
+    };
+    if (!$memfd) {
+        if ( my $err = $@ ) {
+            if ($err->get('error') == Errno::ENOSYS()) {
+                local $! = Errno::ENOSYS();
+                diag "Skipping test: $!";
+                return;
+            }
+
+            die $err;
+        }
+
+        die "No memfd but no eval error?";
+    }
 
     my $pid = fork or do {
         syswrite( $memfd, 'hahaha' );
