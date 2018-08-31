@@ -33,7 +33,10 @@ This class inherits from L<Linux::Perl::Base::TimerEventFD>.
 use strict;
 use warnings;
 
-use parent 'Linux::Perl::Base::TimerEventFD';
+use parent (
+    'Linux::Perl::Base',
+    'Linux::Perl::Base::TimerEventFD',
+);
 
 use Module::Load;
 
@@ -81,11 +84,7 @@ sub new {
 
     local ($!, $^E);
 
-    my $arch_module = $class->can('NR_eventfd') && $class;
-    $arch_module ||= do {
-        require Linux::Perl::ArchLoader;
-        Linux::Perl::ArchLoader::get_arch_module($class);
-    };
+    my $arch_module = $class->_get_arch_module();
 
     my $initval = 0 + ( $opts{'initval'} || 0 );
 

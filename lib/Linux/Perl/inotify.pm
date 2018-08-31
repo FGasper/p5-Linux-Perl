@@ -21,7 +21,7 @@ Linux::Perl::inotify
 
 =head1 DESCRIPTION
 
-This is an interface to Linuxýs Ûinotifyû feature.
+This is an interface to Linux’s “inotify” feature.
 
 =cut
 
@@ -29,6 +29,8 @@ use Linux::Perl;
 use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::EasyPack;
 use Linux::Perl::ParseFlags;
+
+use parent 'Linux::Perl::Base';
 
 *_flag_CLOEXEC = \*Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
 *_flag_NONBLOCK = \*Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
@@ -85,12 +87,24 @@ use constant _event_opts => {
 =head2 I<CLASS>->EVENT_NUMBER()
 
 A hash reference of event names to numeric values. The member keys
-are: C<ACCESS>, C<MODIFY>, C<ATTRIB>, C<CLOSE_WRITE>, C<CLOSE_NOWRITE>,
-C<OPEN>, C<MOVED_FROM>, C<MOVED_TO>, C<CREATE>, C<DELETE>,
-C<DELETE_SELF>, C<MOVE_SELF>, C<UNMOUNT>, C<Q_OVERFLOW>, C<IGNORED>,
-C<ISDIR>, C<CLOSE>, and C<MOVE>.
+are:
 
-See C<man 7 inotify> for details of what these mean.
+=over
+
+=item * C<ACCESS>, C<MODIFY>, C<ATTRIB>
+
+=item * C<OPEN>, C<CLOSE>, C<CLOSE_WRITE>, C<CLOSE_NOWRITE>
+
+=item * C<MOVE>, C<MOVED_FROM>, C<MOVED_TO>, C<MOVE_SELF>
+
+=item * C<CREATE>, C<DELETE>, C<DELETE_SELF>
+
+=item * C<UNMOUNT>, C<Q_OVERFLOW>, C<IGNORED>, C<ISDIR>
+
+=back
+
+See C<man 7 inotify> for details of what these mean. This is
+useful to parse the return from C<read()> (below).
 
 =cut
 
@@ -118,10 +132,7 @@ C<NONBLOCK> and/or C<CLOEXEC>.
 sub new {
     my ($class, %opts) = @_;
 
-    if (!$class->can('NR_inotify_init')) {
-        require Linux::Perl::ArchLoader;
-        $class = Linux::Perl::ArchLoader::get_arch_module($class);
-    }
+    $class = $class->_get_arch_module();
 
     my $flags = Linux::Perl::ParseFlags::parse( $class, $opts{'flags'} );
 
@@ -154,13 +165,28 @@ See C<man 2 inotify_add_watch> for more information.
 =item * C<path> - The filesystem path to monitor.
 
 =item * C<events> - An array reference of events to monitor for.
-Recognized events are: C<ACCESS>, C<MODIFY>, C<ATTRIB>,
-C<CLOSE_WRITE>, C<CLOSE_NOWRITE>, C<OPEN>, C<MOVED_FROM>,
-C<MOVED_TO>, C<CREATE>, C<DELETE>, C<DELETE_SELF>, C<MOVE_SELF>,
-C<CLOSE>, C<MOVE>, C<ALL_EVENTS>, C<ONLYDIR>, C<DONT_FOLLOW>,
-C<EXCL_UNLINK>, C<MASK_CREATE>, C<MASK_ADD>, and C<ONESHOT>.
+Recognized events are:
+
+=over
+
+=item * C<ACCESS>, C<MODIFY>, C<ATTRIB>
+
+=item * C<OPEN>, C<CLOSE>, C<CLOSE_WRITE>, C<CLOSE_NOWRITE>
+
+=item * C<MOVE>, C<MOVED_FROM>, C<MOVED_TO>, C<MOVE_SELF>
+
+=item * C<CREATE>, C<DELETE>, C<DELETE_SELF>
+
+=item * C<UNMOUNT>, C<Q_OVERFLOW>, C<IGNORED>, C<ISDIR>
+
+=item * C<ALL_EVENTS>
+
+=item * C<ONLYDIR>, C<DONT_FOLLOW>, C<EXCL_UNLINK>, C<MASK_CREATE>,
+C<MASK_ADD>, C<ONESHOT>
 
 =back
+
+Note that your kernel may not recognize all of these.
 
 =cut
 
@@ -204,7 +230,8 @@ BEGIN {
 
 Reads events from the inotify instance. Each event is returned as
 a hash reference with members C<wd>, C<mask>, C<cookie>, and C<name>.
-See C<man 7 inotify> for details about what these mean.
+See C<man 7 inotify> for details about what these mean. (Use the
+members of C<EVENT_NUMBER()> above to parse C<mask>.)
 
 Note that if the underlying inotify object is not set C<NONBLOCK>
 then this call will block until there is an inotify event to read.

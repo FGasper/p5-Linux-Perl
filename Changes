@@ -1,7 +1,8 @@
 Revision history for Perl module Linux::Perl
 
 0.13
-- Add memfd and mq (POSIX message queueing)
+- Add memfd, mq (POSIX message queueing), signalfd, sigprocmask, & inotify.
+- Add i686 for aio and getdents.
 
 0.12 Mon Aug 27 2018
 - Fix eventfd/i386.pm (again?), and add i686 aio (untested!).

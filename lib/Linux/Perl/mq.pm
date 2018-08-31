@@ -35,6 +35,8 @@ Linux::Perl::mq - POSIX message queue
 
 =cut
 
+use parent 'Linux::Perl::Base';
+
 use Linux::Perl;
 use Linux::Perl::EasyPack;
 use Linux::Perl::Constants::Fcntl;
@@ -379,16 +381,6 @@ sub receive {
 }
 
 #----------------------------------------------------------------------
-
-sub _get_arch_module {
-    my ($class) = @_;
-
-    my $arch_module = $class->can('NR_mq_open') && $class;
-    return $arch_module ||= do {
-        require Linux::Perl::ArchLoader;
-        Linux::Perl::ArchLoader::get_arch_module($class);
-    };
-}
 
 sub _validate_name {
     my ($name) = @_;

@@ -3,7 +3,10 @@ package Linux::Perl::signalfd;
 use strict;
 use warnings;
 
-use parent qw( Linux::Perl::Base::BitsTest );
+use parent qw(
+    Linux::Perl::Base
+    Linux::Perl::Base::BitsTest
+);
 
 use Linux::Perl;
 use Linux::Perl::EasyPack;
@@ -21,11 +24,7 @@ use constant _sfd_siginfo_size => 128;
 sub new {
     my ($class, %opts) = @_;
 
-    my $arch_module = $class->can('NR_signalfd') && $class;
-    $arch_module ||= do {
-        require Linux::Perl::ArchLoader;
-        Linux::Perl::ArchLoader::get_arch_module($class);
-    };
+    my $arch_module = $class->_get_arch_module();
 
     my $flags = Linux::Perl::ParseFlags::parse( $class, $opts{'flags'} );
 
