@@ -3,7 +3,41 @@ package Linux::Perl::signalfd;
 use strict;
 use warnings;
 
-use parent qw( Linux::Perl::Base::BitsTest );
+=head1 NAME
+
+Linux::Perl::signalfd
+
+=head1 SYNOPSIS
+
+    # One potential way of preventing the signals
+    # from taking down the process.
+    Linux::Perl::sigprocmask->block( 'INT', 'ABRT' );
+
+    my $sigfd = Linux::Perl::signalfd->new(
+        flags => ['NONBLOCK', 'CLOEXEC'],
+        signals => ['INT', 'ABRT'],
+    );
+
+    $sigfd->set_signals( 'INT' );
+
+    my @evts = $sigfd->read();
+
+=head1 DESCRIPTION
+
+An implementation of Linux’s “signalfd”.
+
+Note that you’ll need to ensure that whatever signals you
+expect to receive don’t take down the process.
+L<sigprocmask|Linux::Perl::sigprocmask> can help with this.
+
+=cut
+
+use parent qw(
+    Linux::Perl::Base
+    Linux::Perl::Base::BitsTest
+);
+
+use Call::Context;
 
 use Linux::Perl;
 use Linux::Perl::EasyPack;
@@ -18,14 +52,28 @@ use constant _sfd_siginfo_size => 128;
 
 #----------------------------------------------------------------------
 
+=head1 METHODS
+
+=head2 I<CLASS>->new( %OPTS )
+
+Creates a signalfd instance. %OPTS are:
+
+=over
+
+=item * C<signals> - An array reference, each of whose members is either
+a string (e.g., C<INT>) or a signal number.
+
+=item * C<flags> - Optional, an array reference of either/both of:
+C<NONBLOCK>, C<CLOEXEC>.
+
+=back
+
+=cut
+
 sub new {
     my ($class, %opts) = @_;
 
-    my $arch_module = $class->can('NR_signalfd') && $class;
-    $arch_module ||= do {
-        require Linux::Perl::ArchLoader;
-        Linux::Perl::ArchLoader::get_arch_module($class);
-    };
+    my $arch_module = $class->_get_arch_module();
 
     my $flags = Linux::Perl::ParseFlags::parse( $class, $opts{'flags'} );
 
@@ -39,6 +87,13 @@ sub new {
 }
 
 #----------------------------------------------------------------------
+
+=head2 $num = I<OBJ>->fileno()
+
+Returns the file descriptor, which can be used with, e.g.,
+C<select()>, L<epoll()|Linux::Perl::epoll>, or C<poll()>.
+
+=cut
 
 sub fileno { return $_[0][0]; }
 
@@ -68,18 +123,51 @@ BEGIN {
     );
 }
 
+=head2 @signals = I<OBJ>-read()
+
+Reads events from the signalfd instance. Each event is a hash reference
+whose keys and values correspond to C<struct inotify_event>.
+(cf. C<man 7 inotify>)
+
+In scalar context the return is the number of hash references that would
+be returned in list context.
+
+An empty return (0 in scalar context) is an error state, in which case
+C<$!> will indicate what the error was.
+
+=cut
+
 sub read {
     my ($self) = @_;
 
-    return undef if !sysread( $self->[1], my $buf, _sfd_siginfo_size() );
+    Call::Context::must_be_list();
 
-    my %result;
-    @result{ @$sfd_siginfo_keys_ar } = unpack $sfd_siginfo_pack, $buf;
+    return if !sysread( $self->[1], my $buf, 65536 );
 
-    return \%result;
+    my @sigs;
+
+    while (length $buf) {
+        my $bufbuf = substr($buf, 0, _sfd_siginfo_size(), q<>);
+
+        my %result;
+        @result{ @$sfd_siginfo_keys_ar } = unpack $sfd_siginfo_pack, $bufbuf;
+
+        push @sigs, \%result;
+    }
+
+    return @sigs;
 }
 
 #----------------------------------------------------------------------
+
+=head2 I<OBJ>->set_signals( @SIGNALS )
+
+Updates the signalfd instance’s list of signals to listen for.
+@SIGNALS is a list such as the constructor’s C<signals> argument.
+
+This returns the instance.
+
+=cut
 
 sub set_signals {
     my ($self, @signals) = @_;

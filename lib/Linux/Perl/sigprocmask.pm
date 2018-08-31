@@ -27,6 +27,8 @@ An implementation of the kernel’s logic to set the signal mask.
 
 =cut
 
+use parent 'Linux::Perl::Base';
+
 use Linux::Perl;
 use Linux::Perl::SigSet;
 
@@ -97,11 +99,7 @@ sub _do {
 
     my $oldmask = "\0" x length($mask);
 
-    my $arch_module = ($class ne __PACKAGE__) && $class;
-    $arch_module ||= do {
-        require Linux::Perl::ArchLoader;
-        Linux::Perl::ArchLoader::get_arch_module($class);
-    };
+    my $arch_module = $class->_get_arch_module();
 
     Linux::Perl::call(
         $arch_module->NR_rt_sigprocmask(),

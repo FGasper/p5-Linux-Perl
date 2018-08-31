@@ -33,6 +33,8 @@ C<man 7 epoll> and the various system calls’ pages) for full details.
 
 =cut
 
+use parent 'Linux::Perl::Base';
+
 use Linux::Perl;
 use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::EasyPack;
@@ -63,11 +65,7 @@ sub new {
 
     local ($!, $^E);
 
-    my $arch_module = ($class ne __PACKAGE__) && $class;
-    $arch_module ||= do {
-        require Linux::Perl::ArchLoader;
-        Linux::Perl::ArchLoader::get_arch_module($class);
-    };
+    my $arch_module = $class->_get_arch_module();
 
     my $flags = Linux::Perl::ParseFlags::parse( $class, $opts{'flags'} );
 
