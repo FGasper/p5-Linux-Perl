@@ -81,7 +81,7 @@ sub _do_tests {
         my $err = $@ or die "no inotify but no error?";
 
         if ($err->get('error') == Errno::EMFILE()) {
-            diag "$@";
+            diag "inotify init failed: $@";
 
             for my $in_stat ( qw( user_instances user_watches queued_events ) ) {
                 my $node = "/proc/sys/fs/inotify/max_$in_stat";
@@ -90,9 +90,9 @@ sub _do_tests {
                 diag "$node: $val";
             }
 
-            diag "inotify instances for UID $>:";
-            diag q<> . `for foo in /proc/*/fd/*; do readlink -f \$foo; done | grep ':inotify' | sort | uniq -c | sort -nr | awk '{print; s+=\$1} END {print s}'`;
-            diag q<> . `ps aux`;
+            #diag "inotify instances for UID $>:";
+            #diag q<> . `for foo in /proc/*/fd/*; do readlink -f \$foo; done | grep ':inotify' | sort | uniq -c | sort -nr | awk '{print; s+=\$1} END {print s}'`;
+            #diag q<> . `ps aux`;
 
             return;
         }
