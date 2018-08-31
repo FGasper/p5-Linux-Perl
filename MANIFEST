@@ -6,6 +6,7 @@ MANIFEST
 Makefile.PL
 lib/Linux/Perl.pm
 lib/Linux/Perl/ArchLoader.pm
+lib/Linux/Perl/Base.pm
 lib/Linux/Perl/Base/BitsTest.pm
 lib/Linux/Perl/Base/TimerEventFD.pm
 lib/Linux/Perl/Constants.pm
