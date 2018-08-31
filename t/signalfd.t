@@ -59,7 +59,7 @@ sub _do_tests {
 
     kill 'USR1', $$;
 
-    my $siginfo_hr = $sfd->read();
+    my ($siginfo_hr) = $sfd->read();
 
     my %sig_num;
     my @names = split ' ', $Config::Config{sig_name};
@@ -93,7 +93,7 @@ sub _do_tests {
 
     kill 'USR2', $$;
 
-    $siginfo_hr = $sfd->read();
+    ($siginfo_hr) = $sfd->read();
 
     cmp_deeply(
         $siginfo_hr,

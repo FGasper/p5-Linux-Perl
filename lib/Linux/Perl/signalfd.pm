@@ -144,6 +144,8 @@ sub read {
 
     return if !sysread( $self->[1], my $buf, 65536 );
 
+    my @sigs;
+
     while (1) {
         my $bufbuf = substr($buf, 0, _sfd_siginfo_size(), q<>);
 
