@@ -146,7 +146,7 @@ sub read {
 
     my @sigs;
 
-    while (1) {
+    while (length $buf) {
         my $bufbuf = substr($buf, 0, _sfd_siginfo_size(), q<>);
 
         my %result;
