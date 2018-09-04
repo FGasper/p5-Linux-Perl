@@ -1,8 +1,8 @@
 Revision history for Perl module Linux::Perl
 
-0.14
+0.14 Tue Sep 4 2018
 - BREAKING CHANGE: epoll wait() now returns a list of key/value pairs
-  rather than a list of hashes. (This is much lighter in tight loops.)
+  rather than a list of hashes. (The new format is lighter in tight loops.)
 
 0.13 Thu Aug 30 2018
 - Add memfd, mq (POSIX message queueing), signalfd, sigprocmask, & inotify.
