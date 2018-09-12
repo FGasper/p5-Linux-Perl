@@ -216,6 +216,16 @@ sub add {
 
 #----------------------------------------------------------------------
 
+=head2 I<OBJ>->fileno()
+
+Returns the inotify instance’s file descriptor number.
+
+=cut
+
+sub fileno { return $_[0][0] }
+
+#----------------------------------------------------------------------
+
 my ($inotify_keys_ar, $inotify_pack, $inotify_sizeof);
 BEGIN {
     ($inotify_keys_ar, $inotify_pack) = Linux::Perl::EasyPack::split_pack_list(
