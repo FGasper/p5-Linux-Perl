@@ -73,8 +73,8 @@ L<Config> to determine the current platform.
 
 =head1 PLATFORM SUPPORT
 
-C<x86_64> and C<arm> are the best-supported platforms. Limited support
-is included for C<i686> and C<i386>.
+C<x86_64> and C<arm> are the best-supported platforms. C<i686> and C<i386>
+also have some support.
 
 Support for adding new platforms just involves adding new modules with the
 necessary constants to the distribution.
@@ -88,7 +88,7 @@ use warnings;
 
 use Linux::Perl::X ();
 
-our $VERSION = '0.13-TRIAL8';
+our $VERSION = '0.14';
 
 our @_TOLERATE_ERRNO;
 
