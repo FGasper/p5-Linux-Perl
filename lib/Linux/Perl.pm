@@ -1,5 +1,8 @@
 package Linux::Perl;
 
+use strict;
+use warnings;
+
 =encoding utf-8
 
 =head1 NAME
@@ -53,6 +56,8 @@ Each family of system calls lives in its own namespace under C<Linux::Perl>:
 
 =item * L<Linux::Perl::mq>
 
+=item * L<Linux::Perl::sendmsg>
+
 =back
 
 The distribution contains a number of other modules, none of which is
@@ -82,9 +87,6 @@ necessary constants to the distribution.
 Note also that a 64-bit Perl is generally assumed.
 
 =cut
-
-use strict;
-use warnings;
 
 use Linux::Perl::X ();
 
