@@ -33,32 +33,10 @@ and C<sendto>.
 use parent 'Linux::Perl::Base';
 
 use Linux::Perl;
+use Linux::Perl::MsgHdr;
 use Linux::Perl::ParseFlags;
 
 use constant {
-    _msghdr => q<
-        P   # name
-        L!  # namelen
-        P   # iov
-        L!  # iovlen
-        P   # control
-        L!  # controllen
-        x[I!]
-    >,
-
-    _cmsghdr => q<
-        L!  # len
-        i!  # level
-        i!  # type
-        a*  # data
-    >,
-
-    # buffer, length
-    _iovec => q< P L! >,
-
-    _sizelen => length( pack 'L!' ),
-    _intlen  => length( pack 'I!' ),
-
     _flag_CONFIRM   => 0x800,
     _flag_DONTROUTE => 4,
     _flag_DONTWAIT => 0x40,
@@ -104,40 +82,10 @@ sub sendmsg {
         $opts{'flags'},
     );
 
-    # Without this we get warnings:
-    #
-    #   Attempt to pack pointer to temporary value
-    #
-    # These warnings seem irrelevant since the data
-    # is sent immediately.
-    no warnings 'pack';
-
-    my $control = $opts{'control'} && pack(
-        _cmsghdr(),
-        _sizelen() + 2 * _intlen() + length $opts{'control'}[2],
-        @{ $opts{'control'} },
-    );
-
-    my $msg = pack(
-        _msghdr(),
-
-        $opts{'name'},
-        defined($opts{'name'}) ? length($opts{'name'}) : 0,
-
-        $opts{'iov'} && join(
-            q<>,
-            map { pack( _iovec(), $$_, length $$_) } @{ $opts{'iov'} },
-        ),
-        $opts{'iov'} ? 0 + @{ $opts{'iov'} } : 0,
-
-        $control,
-        length( $control || q<> ),
-    );
-
     return Linux::Perl::call(
         $class->NR_sendmsg(),
         0 + $opts{'fd'},
-        $msg,
+        Linux::Perl::MsgHdr::pack_msghdr(%opts),
         0 + $flags,
     );
 }
