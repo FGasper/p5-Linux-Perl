@@ -69,4 +69,16 @@ sub _do_tests {
         },
         'sending SCM_CREDENTIALS',
     );
+
+    lives_ok(
+        sub {
+            $class->sendmsg(
+                fd => fileno($yin),
+                iov => [ \'0' ],
+                control => [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), pack( "I!*", fileno(\*STDOUT) ) ],
+                flags => ['NOSIGNAL'],
+            );
+        },
+        'sending SCM_RIGHTS',
+    );
 }
