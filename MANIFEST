@@ -82,6 +82,7 @@ t/inotify.t
 t/lib/LP_EnsureArch.pm
 t/memfd.t
 t/mq.t
+t/sendmsg.t
 t/signalfd.t
 t/sigprocmask.t
 t/timerfd.t
