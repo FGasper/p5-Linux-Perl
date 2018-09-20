@@ -36,6 +36,8 @@ use Linux::Perl;
 use Linux::Perl::ParseFlags;
 
 use constant {
+    _EAGAIN => 11,
+
     _msghdr => q<
         P   # name
         L!  # namelen
@@ -70,9 +72,11 @@ use constant {
 
 =head1 METHODS
 
-=head2 I<CLASS>->sendmsg( %OPTS )
+=head2 $bytes = I<CLASS>->sendmsg( %OPTS )
 
-%OPTS correspond to the system call:
+If EAGAIN/EWOULDBLOCK is encountered, undef is returned.
+
+%OPTS correspond to the system call arguments:
 
 =over
 
@@ -134,12 +138,16 @@ sub sendmsg {
         length( $control || q<> ),
     );
 
-    return Linux::Perl::call(
+    local @Linux::Perl::_TOLERATE_ERRNO = ( _EAGAIN() );
+
+    my $ret = Linux::Perl::call(
         $class->NR_sendmsg(),
         0 + $opts{'fd'},
         $msg,
         0 + $flags,
     );
+
+    return( (-1 == $ret) ? undef : $ret );
 }
 
 #----------------------------------------------------------------------
@@ -168,6 +176,10 @@ Also see L<Socket::MsgHdr>’s documentation for another example.
 
 I’m not sure if C<recvmsg()> is feasible to implement in pure Perl,
 but that would be a natural complement to this module.
+
+=head1 SEE ALSO
+
+L<Socket::MsgHdr> provides both C<sendmsg()> and C<recvmsg()>.
 
 =cut
 
