@@ -53,6 +53,9 @@ lib/Linux/Perl/mq.pm
 lib/Linux/Perl/mq/arm.pm
 lib/Linux/Perl/mq/i686.pm
 lib/Linux/Perl/mq/x86_64.pm
+lib/Linux/Perl/sendmsg.pm
+lib/Linux/Perl/sendmsg/arm.pm
+lib/Linux/Perl/sendmsg/x86_64.pm
 lib/Linux/Perl/signalfd.pm
 lib/Linux/Perl/signalfd/arm.pm
 lib/Linux/Perl/signalfd/i686.pm
