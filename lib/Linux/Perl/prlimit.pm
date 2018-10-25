@@ -134,7 +134,7 @@ sub _prlimit64 {
 
     $class = $class->_get_arch_module();
 
-    Linux::Perl::call( $class->_NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr );
+    Linux::Perl::call( $class->NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr || () );
 
     return wantarray ? unpack( _TMPL(), $$old_sr ) : ();
 }
