@@ -44,13 +44,15 @@ done_testing();
 sub _do_tests {
     my ($class) = @_;
 
-    my @lims1 = $class->get(0, $class->NUMBER()->{'NPROC'});
+    my $resnum = $class->NUMBER()->{'MSGQUEUE'};
 
-    my @lims2 = $class->set(0, $class->NUMBER()->{'NPROC'}, 543, 654);
+    my @lims1 = $class->get(0, $resnum);
+
+    my @lims2 = $class->set(0, $resnum, 543, 654);
 
     is( "@lims2", "@lims1", 'set() matches prior get()' );
 
-    my @lims3 = $class->set(0, $class->NUMBER()->{'NPROC'}, 432, 543);
+    my @lims3 = $class->set(0, $resnum, 432, 543);
 
     is( "@lims3", '543 654', 'set() output matches input to prior set()' );
 
@@ -62,13 +64,13 @@ sub _do_tests {
         close $ready_r;
         close $p_ready_w;
 
-        my @old = $class->set(0, $class->NUMBER()->{'NPROC'}, 111, 222);
+        my @old = $class->set(0, $resnum, 111, 222);
 
         syswrite($ready_w, "@old\n");
         readline $p_ready_r;
         close $p_ready_r;
 
-        @old = $class->get(0, $class->NUMBER()->{'NPROC'});
+        @old = $class->get(0, $resnum);
         syswrite($ready_w, "@old\n");
 
         exit;
@@ -79,11 +81,11 @@ sub _do_tests {
 
     readline $ready_r;
 
-    my @lims4 = $class->get( $pid, $class->NUMBER()->{'NPROC'} );
+    my @lims4 = $class->get( $pid, $resnum );
 
     is( "@lims4", '111 222', 'read other process’s rlimit' );
 
-    $class->set( $pid, $class->NUMBER()->{'NPROC'}, 110, 220 );
+    $class->set( $pid, $resnum, 110, 220 );
 
     print {$p_ready_w} "\n";
     close $p_ready_w;
