@@ -116,10 +116,12 @@ scalar context.
 sub set {
     my ($class, $pid, $resource, $soft, $hard) = @_;
 
-    my $old = pack _TMPL();
+    my $old;
 
     if (defined wantarray) {
         Call::Context::must_be_list();
+
+        $old = pack _TMPL();
     }
 
     my $new = pack _TMPL(), $soft, $hard;
@@ -132,7 +134,9 @@ sub _prlimit64 {
 
     $class = $class->_get_arch_module();
 
-    Linux::Perl::call( $class->NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr );
+    # The `|| 0` avoids warning from Perl about
+    # undefined values passed to syscall().
+    Linux::Perl::call( $class->NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr || 0 );
 
     return wantarray ? unpack( _TMPL(), $$old_sr ) : ();
 }
