@@ -48,13 +48,13 @@ sub _do_tests {
 
     my @lims1 = $class->get(0, $resnum);
 
-    my @lims2 = $class->set(0, $resnum, 543, 654);
+    my @lims2 = $class->set(0, $resnum, 54, 65);
 
     is( "@lims2", "@lims1", 'set() matches prior get()' );
 
-    my @lims3 = $class->set(0, $resnum, 432, 543);
+    my @lims3 = $class->set(0, $resnum, 43, 54);
 
-    is( "@lims3", '543 654', 'set() output matches input to prior set()' );
+    is( "@lims3", '54 65', 'set() output matches input to prior set()' );
 
     pipe( my $ready_r, my $ready_w );
 
@@ -64,7 +64,7 @@ sub _do_tests {
         close $ready_r;
         close $p_ready_w;
 
-        my @old = $class->set(0, $resnum, 111, 222);
+        my @old = $class->set(0, $resnum, 11, 22);
 
         syswrite($ready_w, "@old\n");
         readline $p_ready_r;
@@ -83,15 +83,15 @@ sub _do_tests {
 
     my @lims4 = $class->get( $pid, $resnum );
 
-    is( "@lims4", '111 222', 'read other process’s rlimit' );
+    is( "@lims4", '11 22', 'read other process’s rlimit' );
 
-    $class->set( $pid, $resnum, 110, 220 );
+    $class->set( $pid, $resnum, 10, 20 );
 
     print {$p_ready_w} "\n";
     close $p_ready_w;
 
     my @lims6 = split m<\s+>, readline $ready_r;
-    is( "@lims6", '110 220', 'set other process’s rlimit' );
+    is( "@lims6", '10 20', 'set other process’s rlimit' );
 
     waitpid $pid, 0;
 

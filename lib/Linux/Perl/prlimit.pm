@@ -116,12 +116,10 @@ scalar context.
 sub set {
     my ($class, $pid, $resource, $soft, $hard) = @_;
 
-    my $old;
+    my $old = pack _TMPL();
 
     if (defined wantarray) {
         Call::Context::must_be_list();
-
-        $old = pack _TMPL();
     }
 
     my $new = pack _TMPL(), $soft, $hard;
@@ -134,7 +132,7 @@ sub _prlimit64 {
 
     $class = $class->_get_arch_module();
 
-    Linux::Perl::call( $class->NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr || () );
+    Linux::Perl::call( $class->NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr );
 
     return wantarray ? unpack( _TMPL(), $$old_sr ) : ();
 }
