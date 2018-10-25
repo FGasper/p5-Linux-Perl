@@ -18,6 +18,10 @@ Linux::Perl - Linux system calls with pure Perl
 
 =head1 DESCRIPTION
 
+Linux::Perl’s goal is to provide, without use of XS, feature-complete
+implementations of Linux kernel features that the Perl interpreter does
+not expose.
+
 In memory-sensitive environments it is useful to minimize the number
 of XS modules that Perl loads. Oftentimes the CPAN modules that implement
 support for various Linux system calls, though, will bring in XS for the
@@ -58,6 +62,8 @@ Each family of system calls lives in its own namespace under C<Linux::Perl>:
 
 =item * L<Linux::Perl::sendmsg>
 
+=item * L<Linux::Perl::prlimit>
+
 =back
 
 The distribution contains a number of other modules, none of which is
@@ -65,9 +71,13 @@ currently intended for outside use.
 
 =head1 PLATFORM-SPECIFIC INVOCATION
 
-Each Linux::Perl system call implementation can be called with a
-platform-neutral syntax as well as with a platform-specific one;
-for example:
+Linux::Perl achieves functionality by hard-coding each supported platform’s
+number for each required system call. As a consequence, any new platforms’
+system calls will need to be added manually.
+
+To allow optimization for portability or efficiency, each implementation
+can be called with a platform-neutral syntax as well as with a
+platform-specific one; for example:
 
     my $efd = Linux::Perl::eventfd->new();
 
