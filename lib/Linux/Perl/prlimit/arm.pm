@@ -6,7 +6,7 @@ use warnings;
 use parent 'Linux::Perl::prlimit';
 
 use constant {
-    _NR_prlimit64 => 340,
+    _NR_prlimit64 => 369,
 };
 
 1;

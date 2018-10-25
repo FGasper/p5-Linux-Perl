@@ -33,7 +33,10 @@ use warnings;
 use Call::Context;
 use Linux::Perl;
 
-use parent 'Linux::Perl::Base';
+use parent (
+    'Linux::Perl::Base',
+    'Linux::Perl::Base::BitsTest',
+);
 
 #----------------------------------------------------------------------
 
@@ -80,7 +83,7 @@ A reference to a hash that correlates resource name (e.g., C<FSIZE>) to number.
 
 use constant NUMBER => { map { ( (NAMES)[$_] => $_ ) } 0 .. (NAMES - 1) };
 
-use constant _TMPL => 'L!L!';
+use constant _TMPL => (__PACKAGE__->_PACK_u64() x 2);
 
 #----------------------------------------------------------------------
 
