@@ -1,5 +1,8 @@
 Revision history for Perl module Linux::Perl
 
+0.16 Thu Oct 25 2018
+- Add prlimit.
+
 0.15 Tue Sep 11 2018
 - Add fileno() to inotify.
 
