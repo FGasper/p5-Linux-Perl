@@ -97,11 +97,9 @@ sub get {
 
     Call::Context::must_be_list();
 
-    my $buf = pack _TMPL();
+    my $old = pack _TMPL();
 
-    $class->_prlimit64($pid, $resource, \$new, \$old);
-
-    return unpack _TMPL(), $buf;
+    return $class->_prlimit64($pid, $resource, \undef, \$old);
 }
 
 =head2 ($old_soft, $old_hard) = I<CLASS>->set( $PID, $RESOURCE_NUM, $SOFT, $HARD )
@@ -125,9 +123,7 @@ sub set {
 
     my $new = pack _TMPL(), $soft, $hard;
 
-    $class->_prlimit64($pid, $resource, \$new, \$old);
-
-    return wantarray ? unpack( _TMPL(), $old ) : ();
+    return $class->_prlimit64($pid, $resource, \$new, \$old);
 }
 
 sub _prlimit64 {
@@ -135,7 +131,9 @@ sub _prlimit64 {
 
     $class = $class->_get_arch_module();
 
-    return Linux::Perl::call( $class->_NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr );
+    Linux::Perl::call( $class->_NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr );
+
+    return wantarray ? unpack( _TMPL(), $$old_sr ) : ();
 }
 
 1;
