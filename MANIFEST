@@ -13,6 +13,7 @@ lib/Linux/Perl/Constants.pm
 lib/Linux/Perl/Constants/Fcntl.pm
 lib/Linux/Perl/EasyPack.pm
 lib/Linux/Perl/Endian.pm
+lib/Linux/Perl/MsgHdr.pm
 lib/Linux/Perl/ParseFlags.pm
 lib/Linux/Perl/Pointer.pm
 lib/Linux/Perl/SigSet.pm
@@ -53,6 +54,9 @@ lib/Linux/Perl/mq.pm
 lib/Linux/Perl/mq/arm.pm
 lib/Linux/Perl/mq/i686.pm
 lib/Linux/Perl/mq/x86_64.pm
+lib/Linux/Perl/prlimit.pm
+lib/Linux/Perl/prlimit/arm.pm
+lib/Linux/Perl/prlimit/x86_64.pm
 lib/Linux/Perl/sendmsg.pm
 lib/Linux/Perl/sendmsg/arm.pm
 lib/Linux/Perl/sendmsg/x86_64.pm
@@ -82,6 +86,7 @@ t/inotify.t
 t/lib/LP_EnsureArch.pm
 t/memfd.t
 t/mq.t
+t/prlimit.t
 t/sendmsg.t
 t/signalfd.t
 t/sigprocmask.t
