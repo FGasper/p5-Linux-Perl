@@ -134,7 +134,7 @@ sub _prlimit64 {
 
     $class = $class->_get_arch_module();
 
-    # The `|| 0` avoids warning from Perl about
+    # The `|| 0` avoids a warning from Perl about
     # undefined values passed to syscall().
     Linux::Perl::call( $class->NR_prlimit64(), 0 + $pid, 0 + $resource, $$new_sr, $$old_sr || 0 );
 

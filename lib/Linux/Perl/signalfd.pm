@@ -3,6 +3,8 @@ package Linux::Perl::signalfd;
 use strict;
 use warnings;
 
+=encoding utf8
+
 =head1 NAME
 
 Linux::Perl::signalfd
