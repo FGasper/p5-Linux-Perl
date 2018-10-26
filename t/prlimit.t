@@ -46,7 +46,13 @@ sub _do_tests {
 
     my $resnum = $class->NUMBER()->{'MSGQUEUE'};
 
-    my @lims1 = $class->get(0, $resnum);
+    my @lims1 = eval {
+        $class->get(0, $resnum);
+    };
+    if (!@lims1 && $@->get('error') == Errno::ENOSYS()) {
+        diag "This kernel lacks prlimit support.";
+        return;
+    }
 
     my @lims2 = $class->set(0, $resnum, 54, 65);
 

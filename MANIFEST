@@ -56,6 +56,7 @@ lib/Linux/Perl/mq/i686.pm
 lib/Linux/Perl/mq/x86_64.pm
 lib/Linux/Perl/prlimit.pm
 lib/Linux/Perl/prlimit/arm.pm
+lib/Linux/Perl/prlimit/i686.pm
 lib/Linux/Perl/prlimit/x86_64.pm
 lib/Linux/Perl/sendmsg.pm
 lib/Linux/Perl/sendmsg/arm.pm
