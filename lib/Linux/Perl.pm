@@ -18,7 +18,7 @@ Linux::Perl - Linux system calls with pure Perl
 
 =head1 DESCRIPTION
 
-Linux::Perl’s goal is to provide, without use of XS, feature-complete
+Linux::Perl’s goal is to provide, without use of XS,
 implementations of Linux kernel features that the Perl interpreter does
 not expose.
 
@@ -27,8 +27,19 @@ of XS modules that Perl loads. Oftentimes the CPAN modules that implement
 support for various Linux system calls, though, will bring in XS for the
 sake of writing platform-neutral code.
 
-Linux::Perl accommodates use cases where platform neutrality is less of
-a concern than minimizing memory usage.
+Linux::Perl, by contrast, stays in pure Perl, at the cost of having to include
+the system call numbers in the distribution.
+
+=head1 DESIGN GOALS
+
+=over
+
+=item * Support as much of the kernel functionality as Perl allows.
+
+=item * Use Perl’s high-level language constructs to simplify interfaces,
+e.g., by eliminating paths to failure.
+
+=back
 
 =head1 MODULES
 
