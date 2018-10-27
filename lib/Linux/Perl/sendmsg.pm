@@ -60,11 +60,12 @@ If EAGAIN/EWOULDBLOCK is encountered, undef is returned.
 
 =item * C<fd>
 
-=item * C<name> - irrelevant for connected sockets
+=item * C<name> - String reference. Irrelevant for connected sockets;
+required otherwise.
 
 =item * C<iovec> - Optional, a reference to an array of string references
 
-=item * C<control> - Optional, a reference to an array of: $LEVEL, $TYPE, $DATA.
+=item * C<control> - Optional, a reference to an array of: $LEVEL, $TYPE, \$DATA.
 See below for examples. If you don’t use this, you might as well use Perl’s
 C<send()> built-in.
 
@@ -88,10 +89,14 @@ sub sendmsg {
 
     local @Linux::Perl::_TOLERATE_ERRNO = ( _EAGAIN() );
 
+    # Keep $iov_buf_sr around so we ensure that Perl doesn’t garbage-collect
+    # the buffers we’re sending.
+    my $packed_ar = Linux::Perl::MsgHdr::pack_msghdr(%opts);
+
     my $ret = Linux::Perl::call(
         $class->NR_sendmsg(),
         0 + $opts{'fd'},
-        Linux::Perl::MsgHdr::pack_msghdr(%opts),
+        ${ $packed_ar->[0] },
         0 + $flags,
     );
 
@@ -108,14 +113,14 @@ sub sendmsg {
 
     control => [
         Socket::SOL_SOCKET(), Socket::SCM_CREDENTIALS(),
-        pack( 'I!*', $$, $>, split( m< >, $) ) ),
+        \pack( 'I!*', $$, $>, split( m< >, $) ) ),
     ]
 
 =head2 Passing open file descriptors via local socket
 
     control => [
         Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(),
-        pack( 'I!*', @file_descriptors ),
+        \pack( 'I!*', @file_descriptors ),
     ]
 
 Also see L<Socket::MsgHdr>’s documentation for another example.

@@ -63,7 +63,7 @@ sub _do_tests {
             $class->sendmsg(
                 fd => fileno($yin),
                 iov => [ \'0' ],
-                control => [ Socket::SOL_SOCKET(), Socket::SCM_CREDENTIALS(), pack( "I!*", $$, $>, (split m< >, $))[0] ) ],
+                control => [ Socket::SOL_SOCKET(), Socket::SCM_CREDENTIALS(), \pack( "I!*", $$, $>, (split m< >, $))[0] ) ],
                 flags => ['NOSIGNAL'],
             );
         },
@@ -75,7 +75,7 @@ sub _do_tests {
             $class->sendmsg(
                 fd => fileno($yin),
                 iov => [ \'0' ],
-                control => [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), pack( "I!*", fileno(\*STDOUT) ) ],
+                control => [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), \pack( "I!*", fileno(\*STDOUT) ) ],
                 flags => ['NOSIGNAL'],
             );
         },
