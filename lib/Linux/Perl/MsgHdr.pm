@@ -95,7 +95,7 @@ sub pack_msghdr {
             $opts{'iov'} ? 0 + @{ $opts{'iov'} } : 0,
 
             $control,
-            $control ? (_intlen() + length $control ) : 0,
+            $control ? length( $control ) : 0,
         ),
         \$iov_buf,
         \$control,
