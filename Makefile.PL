@@ -33,7 +33,7 @@ WriteMakefile1(
         'parent'    => 0,
         'X::Tiny'   => 0,
         'Module::Load'  => 0,
-        'Call::Context' => 0,
+        'Call::Context' => 0.03,
     },
 
     TEST_REQUIRES => {
