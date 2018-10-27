@@ -26,7 +26,7 @@ my $control_ar = [
 ];
 
 Linux::Perl::sendmsg->sendmsg(
-    fd => fileno $yin,
+    fd => fileno($yin),
     iov => [ \$data1, \$data2 ],
     control => $control_ar,
 );
@@ -37,7 +37,7 @@ my $control_in = [ \do { my $v = "\0" x 12 } ];
 setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
 
 my $bytes = Linux::Perl::recvmsg->recvmsg(
-    fd => fileno $yang,
+    fd => fileno($yang),
     iov => [ \$data_in ],
     control => $control_in,
 );

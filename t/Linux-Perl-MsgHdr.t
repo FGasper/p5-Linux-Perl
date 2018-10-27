@@ -61,9 +61,9 @@ is(
 #----------------------------------------------------------------------
 
 my %shrink_opts = (
-    name => \do { "\0" x 256 },
-    iov => [ \do { "\0" x 12 }, \do { "\0" x 200 } ],
-    control => [ 0, 0, \do { "\0" x 256 } ],
+    name => \do { my $v = "\0" x 256 },
+    iov => [ \do { my $v = "\0" x 12 }, \do { my $v = "\0" x 200 } ],
+    control => [ 0, 0, \do { my $v = "\0" x 256 } ],
 );
 
 Linux::Perl::MsgHdr::shrink_opt_strings(
