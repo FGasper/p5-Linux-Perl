@@ -30,6 +30,8 @@ use constant {
         a*  # data
     >,
 
+    _cmsghdr_unpack => q< x[L!] i! i! a* >,
+
     # buffer, length
     _iovec => q< P L! >,
 
@@ -41,18 +43,12 @@ use constant {
 
 # Tightly coupled to recvmsg.
 sub shrink_opt_strings {
-    my ($msghdr_sr, $iov_buf_sr, %opts) = @_;
+    my ($msghdr_sr, $iov_buf_sr, $control_sr, %opts) = @_;
 
     my ($namelen, $iovlen, $controllen) = unpack _msghdr_lengths(), $$msghdr_sr;
 
     if ($opts{'control'}) {
-        if ($controllen) {
-            $controllen -= (_sizelen() + 2 * _intlen());
-            substr( ${ $opts{'control'}[2] }, $controllen ) = q<>;
-        }
-        else {
-            splice( @{ $opts{'control'} }, 0, 2 );
-        }
+        (@{ $opts{'control'} }[0, 1], ${ $opts{'control'}[2] } ) = unpack( _cmsghdr_unpack(), $$control_sr );
     }
 
     if ($opts{'name'}) {
@@ -99,7 +95,7 @@ sub pack_msghdr {
             $opts{'iov'} ? 0 + @{ $opts{'iov'} } : 0,
 
             $control,
-            $control ? length( $control ) : 0,
+            $control ? (_intlen() + length $control ) : 0,
         ),
         \$iov_buf,
         \$control,

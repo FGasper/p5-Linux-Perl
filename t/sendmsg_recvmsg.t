@@ -2,6 +2,7 @@
 
 use strict;
 use warnings;
+use autodie;
 
 use Test::More;
 use Test::FailWarnings;
@@ -16,32 +17,45 @@ socketpair my $yin, my $yang, Socket::AF_UNIX, Socket::SOCK_DGRAM, 0;
 my $data1 = join( q<>, 'a' .. 'z' );
 my $data2 = join( q<>, 0 .. 9 );
 
+
+
 my $control_ar = [
     Socket::SOL_SOCKET(),
     Socket::SCM_CREDENTIALS(),
-    pack( 'I!*', $$, $>, split( m< >, $) ) ),
+    \pack( 'I!*', $$, $>, (split m< >, $) )[0] ),
 ];
 
-Linux::Perl::sendmsg(
+Linux::Perl::sendmsg->sendmsg(
     fd => fileno $yin,
-    iovec => [ \$data1, \$data2 ],
+    iov => [ \$data1, \$data2 ],
     control => $control_ar,
 );
 
 my $data_in = "\0" x 1024;
-my $control_in = [ "\0" x 512 ];
+my $control_in = [ \do { my $v = "\0" x 12 } ];
 
-Linux::Perl::recvmsg(
+setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
+
+my $bytes = Linux::Perl::recvmsg->recvmsg(
     fd => fileno $yang,
-    iovec => [ \$data_in ],
+    iov => [ \$data_in ],
     control => $control_in,
 );
 
-is( $data_in, join( q<>, 'a' .. 'z', 0 .. 9 ), 'payload received' );
+is(
+    substr( $data_in, 0, $bytes ),
+    join( q<>, 'a' .. 'z', 0 .. 9 ),
+    'payload received',
+) or diag sprintf('%v.02x', $data_in );
+
 is_deeply(
     $control_in,
-    $control_ar,
+    [
+        Socket::SOL_SOCKET(),
+        Socket::SCM_CREDENTIALS(),
+        \pack( 'I!*', $$, $>, (split m< >, $) )[0] ),
+    ],
     'control received',
-);
+) or diag sprintf('%v.02x', ${ $control_in->[2] });
 
 done_testing();
