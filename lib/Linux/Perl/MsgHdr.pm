@@ -92,7 +92,7 @@ sub pack_msghdr {
         \pack(
             _msghdr(),
 
-            ${ $opts{'name'} },
+            $opts{'name'} && ${ $opts{'name'} },
             defined($opts{'name'}) ? length(${ $opts{'name'} }) : 0,
 
             $iov_buf,
