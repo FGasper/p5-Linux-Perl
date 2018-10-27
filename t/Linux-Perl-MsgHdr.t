@@ -63,11 +63,11 @@ is(
 my %shrink_opts = (
     name => \do { "\0" x 256 },
     iov => [ \do { "\0" x 12 }, \do { "\0" x 200 } ],
-    control => [ 99, 99, \do { "\0" x 256 } ],
+    control => [ 0, 0, \do { "\0" x 256 } ],
 );
 
 Linux::Perl::MsgHdr::shrink_opt_strings(
-    @{$pieces_ar}[0, 1],
+    @$pieces_ar,
     %shrink_opts,
 );
 
@@ -79,9 +79,9 @@ cmp_deeply(
             \do { "\0" x length ${ $pack_opts{'iov'}[0] } },
             \do { "\0" x length ${ $pack_opts{'iov'}[1] } },
         ],
-        control => [ 99, 99, \do { "\0" x 7 } ],
+        control => [ -1, -2, \'3456789' ],
     },
-    'shrink_opt_strings shrinks as expected',
+    'shrink_opt_strings shrinks and restores control data as expected',
 );
 
 done_testing();
