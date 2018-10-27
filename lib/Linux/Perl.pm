@@ -100,7 +100,7 @@ Note also that a 64-bit Perl is generally assumed.
 
 use Linux::Perl::X ();
 
-our $VERSION = '0.16-TRIAL4';
+our $VERSION = '0.16-TRIAL5';
 
 our @_TOLERATE_ERRNO;
 
