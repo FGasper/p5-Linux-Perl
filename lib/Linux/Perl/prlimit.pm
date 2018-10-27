@@ -116,11 +116,11 @@ scalar context.
 sub set {
     my ($class, $pid, $resource, $soft, $hard) = @_;
 
+    Call::Context::must_not_be_scalar();
+
     my $old;
 
     if (defined wantarray) {
-        Call::Context::must_be_list();
-
         $old = pack _TMPL();
     }
 
