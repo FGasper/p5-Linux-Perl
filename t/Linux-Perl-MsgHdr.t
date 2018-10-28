@@ -36,14 +36,14 @@ is(
 
 is(
     ${ $pieces_ar->[1] },
-    join(
-        q<>,
+    pack(
+        'P L! P L!',
 
-        pack('P', ${ $pack_opts{'iov'}[0] }),
-        pack('L!', length ${ $pack_opts{'iov'}[0] }),
+        ${ $pack_opts{'iov'}[0] },
+        length ${ $pack_opts{'iov'}[0] },
 
-        pack('P', ${ $pack_opts{'iov'}[1] }),
-        pack('L!', length ${ $pack_opts{'iov'}[1] }),
+        ${ $pack_opts{'iov'}[1] },
+        length ${ $pack_opts{'iov'}[1] },
     ),
     'iov pack',
 );
@@ -81,7 +81,7 @@ cmp_deeply(
         ],
         control => [ -1, -2, \'3456789' ],
     },
-    'shrink_opt_strings shrinks and restores control data as expected',
+    'shrink_opt_strings shrinks iov & name and restores control data as expected',
 );
 
 done_testing();
