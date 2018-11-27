@@ -9,6 +9,37 @@ use Test::Deep;
 
 use Linux::Perl::MsgHdr;
 
+use Data::Dumper;
+sub _rightdump {
+    local $Data::Dumper::Useqq = 1;
+    local $Data::Dumper::Indent = 0;
+    Dumper(@_);
+}
+
+my $cmsg = Linux::Perl::MsgHdr::pack_control( [ 1, 2, 'abcdef' ] );
+my $lvl_type_data = pack( 'i! i! a8', 1, 2, 'abcdef' );
+my $expected_cmsg = pack( 'L! a*', length(pack 'L!') + length($lvl_type_data), $lvl_type_data );
+is(
+    $cmsg,
+    $expected_cmsg,
+    'pack_control() - one value',
+) or diag _rightdump($cmsg);
+
+$cmsg = Linux::Perl::MsgHdr::pack_control( [ 1, 2, 'abcdef', 3, 4, 'ghijk' ] );
+
+my $ltd2 = pack( 'i! i! a8', 3, 4, 'ghijk' );
+is(
+    $cmsg,
+    join(
+        q<>,
+        $expected_cmsg,
+        pack( 'L! a*', length(pack 'L!') + length($ltd2), $ltd2 ),
+    ),
+    'pack_control() - two values',
+) or diag _rightdump($cmsg);
+
+#----------------------------------------------------------------------
+
 my %pack_opts = (
     name => \'123123',
     iov => [ \'abcdefg', \'hijklmnop' ],

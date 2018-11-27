@@ -67,13 +67,29 @@ sub shrink_opt_strings {
     return;
 }
 
+my ($cmsg_len_w_padding, $ctrl_ar, $cmsg_datalen_plus_padding);
+
+sub pack_control {
+    my ($ctrl_ar) = @_;
+
+    return join(
+        q<>,
+        map {
+            $cmsg_len_w_padding = CMSG_ALIGN( length $ctrl_ar->[ 2 + 3 * $_ ] );
+            pack(
+                "L! i! i! a$cmsg_len_w_padding",
+                CMSG_SPACE($cmsg_len_w_padding),
+                @{$ctrl_ar}[ 3 * $_, 1 + 3 * $_ ],
+                $ctrl_ar->[ 2 + 3 * $_ ],
+            );
+        } 0 .. (@$ctrl_ar / 3 - 1),
+    );
+}
+
 sub pack_msghdr {
     my ($opts_hr) = @_;
 
-    my $control = join(
-        q<>,
-        map { CMSG_SPACE($_) } @{ $opts_hr->{'control'} },
-    );
+    my $control = $opts_hr->{'control'} && pack_control($opts_hr->{'control'});
 
     # We have to join() individual pack()s rather than doing one giant
     # pack() to avoid pack()ing pointers to temporary values.

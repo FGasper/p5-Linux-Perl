@@ -50,34 +50,29 @@ sub _do_tests {
 
     socketpair my $yin, my $yang, Socket::AF_UNIX(), Socket::SOCK_STREAM(), 0;
 
-    $class->sendmsg(
-        fd => fileno($yin),
-        iov => [ \'hello' ],
-    );
+    $class->new( iov => [ \'hello' ] )->sendmsg($yin);
 
     sysread( $yang, my $buf, 5 );
     is( $buf, 'hello', 'sent plain message' );
 
     lives_ok(
         sub {
-            $class->sendmsg(
-                fd => fileno($yin),
+            $class->new(
                 iov => [ \'0' ],
                 control => [ Socket::SOL_SOCKET(), Socket::SCM_CREDENTIALS(), \pack( "I!*", $$, $>, (split m< >, $))[0] ) ],
                 flags => ['NOSIGNAL'],
-            );
+            )->sendmsg($yin);
         },
         'sending SCM_CREDENTIALS',
     );
 
     lives_ok(
         sub {
-            $class->sendmsg(
-                fd => fileno($yin),
+            $class->new(
                 iov => [ \'0' ],
                 control => [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), \pack( "I!*", fileno(\*STDOUT) ) ],
                 flags => ['NOSIGNAL'],
-            );
+            )->sendmsg($yin);
         },
         'sending SCM_RIGHTS',
     );

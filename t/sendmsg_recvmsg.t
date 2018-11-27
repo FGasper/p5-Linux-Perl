@@ -7,10 +7,19 @@ use autodie;
 use Test::More;
 use Test::FailWarnings;
 
+use Data::Dumper;
+
 use Linux::Perl::sendmsg;
 use Linux::Perl::recvmsg;
 
 use Socket;
+use Carp::Always;
+
+sub _rightdump {
+    local $Data::Dumper::Useqq = 1;
+    local $Data::Dumper::Indent = 0;
+    return Dumper(@_);
+}
 
 socketpair my $yin, my $yang, Socket::AF_UNIX, Socket::SOCK_DGRAM, 0;
 
@@ -30,9 +39,6 @@ my $smsg = Linux::Perl::sendmsg->new(
 
 $smsg->sendmsg($yin);
 
-my $data_in = "\0" x 1024;
-my $control_in = [ \do { my $v = "\0" x 12 } ];
-
 setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
 
 my $rmsg = Linux::Perl::recvmsg->new(
@@ -43,20 +49,20 @@ my $rmsg = Linux::Perl::recvmsg->new(
 my $bytes = $rmsg->recvmsg($yang);
 
 is(
-    substr( $data_in, 0, $bytes ),
+    ${ ($rmsg->get_iovec())[0] },
     join( q<>, 'a' .. 'z', 0 .. 9 ),
     'payload received',
-) or diag sprintf('%v.02x', $data_in );
+) or diag _rightdump( $rmsg->get_iovec() );
 
 is_deeply(
-    $control_in,
+    [ $rmsg->get_control() ],
     [
         Socket::SOL_SOCKET(),
         Socket::SCM_CREDENTIALS(),
-        \pack( 'I!*', $$, $>, (split m< >, $) )[0] ),
+        pack( 'I!*', $$, $>, (split m< >, $) )[0] ),
     ],
     'control received',
-) or diag sprintf('%v.02x', ${ $control_in->[2] });
+) or diag _rightdump( $rmsg->get_control() );
 
 #----------------------------------------------------------------------
 
@@ -74,9 +80,6 @@ $smsg->set_control(
 
 $smsg->sendmsg($yin);
 
-$data_in = "\0" x 1024;
-$control_in = [ \do { my $v = "\0" x 12 } ];
-
 setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
 
 $rmsg->set_iovlen( 1024 );
@@ -85,12 +88,12 @@ $rmsg->set_controllen( 12, 12 );
 $bytes = $rmsg->recvmsg($yin);
 
 is_deeply(
-    [ @{$control_in}[0, 1] ],
+    [ ($rmsg->get_control())[0, 1, 4, 5] ],
     [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS() ],
     'control first two values',
 );
 
-my ($rfd, $wfd) = unpack 'I!*', ${ $control_in->[2] };
+my ($rfd, $wfd) = map { unpack 'I!', $_ } ($rmsg->get_control())[2, 6];
 open my $r2, '<&=', $rfd;
 open my $w2, '>&=', $wfd;
 

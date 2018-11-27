@@ -176,7 +176,7 @@ sub recvmsg {
 
     my @iov_lengths = unpack(
         Linux::Perl::MsgHdr::_iovec_lengths() x $iov_ct,
-        $$iov_buf_sr,
+        ${ $packed_ar->[1] },
     );
 
     @{$self}{'_namelen', '_iov_lengths', '_controllen', '_packed'} = ($namelen, \@iov_lengths, $controllen, $packed_ar);
@@ -192,7 +192,7 @@ sub recvmsg {
 #----------------------------------------------------------------------
 
 sub get_name {
-    return substr( $self->{'name'}, 0, $self->{'_namelen'} );
+    return substr( $_[0]->{'name'}, 0, $_[0]->{'_namelen'} );
 }
 
 #sub get_iovec {
