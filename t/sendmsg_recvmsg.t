@@ -20,25 +20,27 @@ my $data2 = join( q<>, 0 .. 9 );
 my $control_ar = [
     Socket::SOL_SOCKET(),
     Socket::SCM_CREDENTIALS(),
-    \pack( 'I!*', $$, $>, (split m< >, $) )[0] ),
+    pack( 'I!*', $$, $>, (split m< >, $) )[0] ),
 ];
 
-Linux::Perl::sendmsg->sendmsg(
-    fd => fileno($yin),
+my $smsg = Linux::Perl::sendmsg->new(
     iov => [ \$data1, \$data2 ],
     control => $control_ar,
 );
+
+$smsg->sendmsg($yin);
 
 my $data_in = "\0" x 1024;
 my $control_in = [ \do { my $v = "\0" x 12 } ];
 
 setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
 
-my $bytes = Linux::Perl::recvmsg->recvmsg(
-    fd => fileno($yang),
-    iov => [ \$data_in ],
-    control => $control_in,
+my $rmsg = Linux::Perl::recvmsg->new(
+    iovlen => [ 1024 ],
+    controllen => [ 12 ],
 );
+
+my $bytes = $rmsg->recvmsg($yang);
 
 is(
     substr( $data_in, 0, $bytes ),
@@ -60,28 +62,27 @@ is_deeply(
 
 pipe my $r, my $w;
 
-$control_ar = [
-    Socket::SOL_SOCKET(),
-    Socket::SCM_RIGHTS(),
-    \pack( 'I!*', fileno($r), fileno($w) ),
-];
+$smsg->set_iov( \do { 'a' .. 'z' } );
 
-Linux::Perl::sendmsg->sendmsg(
-    fd => fileno($yang),
-    iov => [ \do { 'a' .. 'z' } ],
-    control => $control_ar,
+$smsg->set_control(
+    Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(),
+    pack( 'I!', fileno $r),
+
+    Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(),
+    pack( 'I!', fileno $w),
 );
+
+$smsg->sendmsg($yin);
 
 $data_in = "\0" x 1024;
 $control_in = [ \do { my $v = "\0" x 12 } ];
 
 setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
 
-$bytes = Linux::Perl::recvmsg->recvmsg(
-    fd => fileno($yin),
-    iov => [ \$data_in ],
-    control => $control_in,
-);
+$rmsg->set_iovlen( 1024 );
+$rmsg->set_controllen( 12, 12 );
+
+$bytes = $rmsg->recvmsg($yin);
 
 is_deeply(
     [ @{$control_in}[0, 1] ],

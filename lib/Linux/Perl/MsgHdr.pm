@@ -68,31 +68,29 @@ sub shrink_opt_strings {
 }
 
 sub pack_msghdr {
-    my (%opts) = @_;
+    my ($opts_hr) = @_;
 
-    my $control = $opts{'control'} && pack(
-        _cmsghdr(),
-        _sizelen() + 2 * _intlen() + length ${ $opts{'control'}[2] },
-        @{ $opts{'control'} }[0, 1],
-        ${ $opts{'control'}[2] },
+    my $control = join(
+        q<>,
+        map { CMSG_SPACE($_) } @{ $opts_hr->{'control'} },
     );
 
     # We have to join() individual pack()s rather than doing one giant
     # pack() to avoid pack()ing pointers to temporary values.
-    my $iov_buf = $opts{'iov'} && join(
+    my $iov_buf = $opts_hr->{'iov'} && join(
         q<>,
-        map { pack( _iovec(), $$_, length $$_) } @{ $opts{'iov'} },
+        map { pack( _iovec(), $$_, length $$_) } @{ $opts_hr->{'iov'} },
     );
 
     return [
         \pack(
             _msghdr(),
 
-            $opts{'name'} && ${ $opts{'name'} },
-            defined($opts{'name'}) ? length(${ $opts{'name'} }) : 0,
+            $opts_hr->{'name'} && ${ $opts_hr->{'name'} },
+            defined($opts_hr->{'name'}) ? length(${ $opts_hr->{'name'} }) : 0,
 
             $iov_buf,
-            $opts{'iov'} ? 0 + @{ $opts{'iov'} } : 0,
+            $opts_hr->{'iov'} ? 0 + @{ $opts_hr->{'iov'} } : 0,
 
             $control,
             $control ? length( $control ) : 0,
@@ -100,6 +98,19 @@ sub pack_msghdr {
         \$iov_buf,
         \$control,
     ];
+}
+
+use constant {
+    _sizeof_long => length pack( 'L!' ),
+    _sizeof_cmsghdr => length pack( _cmsghdr() ),
+};
+
+sub CMSG_ALIGN {
+    return ( ( $_[0] + _sizeof_long - 1 ) & ~( _sizeof_long - 1 ) );
+}
+
+sub CMSG_SPACE {
+    return( _sizeof_cmsghdr() + CMSG_ALIGN($_[0]) );
 }
 
 1;
