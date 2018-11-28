@@ -123,14 +123,14 @@ sub new {
 
     my $name = "\0" x (delete $opts{'namelen'} || 0);
 
-    my @iovec;
-    if ($opts{'ioveclen'}) {
-        @iovec = map { "\0" x $_ } @{ delete $opts{'ioveclen'} };
-    }
+   my @iovec;
+   if ($opts{'ioveclen'}) {
+       @iovec = map { \("\0" x $_) } @{ delete $opts{'ioveclen'} };
+   }
 
-    my @control;
-    if ($opts{'controllen'}) {
-        @control = map { "\0" x Linux::Perl::MsgHdr::CMSG_SPACE($_) } @{ delete $opts{'ioveclen'} };
+   my @control;
+   if ($opts{'controllen'}) {
+       @control = map { ( 0, 0, "\0" x Linux::Perl::MsgHdr::CMSG_SPACE($_) ) } @{ delete $opts{'controllen'} };
     }
 
     my %self = (
@@ -158,19 +158,22 @@ sub recvmsg {
     my ($self, $fd) = @_;
 
     $fd = fileno $fd if ref $fd;
+use Data::Dumper;
+$Data::Dumper::Useqq = 1;
 
     my $packed_ar = Linux::Perl::MsgHdr::pack_msghdr($self);
+print Dumper( $self, $packed_ar );
 
     local @Linux::Perl::_TOLERATE_ERRNO = ( _EAGAIN() );
 
-    my $ret = Linux::Perl::call(
+    my $bytes = Linux::Perl::call(
         $self->NR_recvmsg(),
         0 + $fd,
         ${ $packed_ar->[0] },
         0 + $self->{'flags'},
     );
 
-    return undef if -1 == $ret;
+    return undef if -1 == $bytes;
 
     my ($namelen, $iov_ct, $controllen) = unpack Linux::Perl::MsgHdr::_msghdr_lengths(), ${ $packed_ar->[0] };
 
@@ -179,14 +182,14 @@ sub recvmsg {
         ${ $packed_ar->[1] },
     );
 
-    @{$self}{'_namelen', '_iov_lengths', '_controllen', '_packed'} = ($namelen, \@iov_lengths, $controllen, $packed_ar);
+    @{$self}{'_namelen', '_iov_lengths', '_controllen', '_packed', '_got_bytes'} = ($namelen, \@iov_lengths, $controllen, $packed_ar, $bytes);
 
 #    Linux::Perl::MsgHdr::shrink_opt_strings(
 #        @$packed_ar,
 #        %opts,
 #    );
 
-    return $ret;
+    return $bytes;
 }
 
 #----------------------------------------------------------------------
@@ -218,8 +221,18 @@ sub get_iovec {
 
     my @iovec;
 
+    my $bytes = $self->{'_got_bytes'};
+
     for my $i ( 0 .. $#{ $self->{'_iov_lengths'} } ) {
-        push @iovec, \substr( $self->{'iovec'}[$i], 0, $self->{'_iov_lengths'}[$i] );
+        if ( length ${ $self->{'iovec'}[$i] } > $bytes ) {
+            push @iovec, \do { substr( ${ $self->{'iovec'}[$i] }, 0, $bytes ) };
+            last;
+        }
+        else {
+            push @iovec, $self->{'iovec'}[$i];
+        }
+
+        $bytes -= length ${ $self->{'iovec'}[$i] };
     }
 
     return \@iovec;
@@ -232,14 +245,36 @@ sub get_control {
 
     my $i = 0;
     while ($i < $self->{'_controllen'}) {
-        my $str = unpack "\@$i L!/A*", $self->{'_packed'};
+printf "controllen: %d\npacked: %v.02x\n", $self->{'_controllen'}, ${ $self->{'_packed'}[2] };
+
+        # $len is inclusive of its own encoding.
+        # $str overshoots by the length of $len's encoding.
+        my ($len, $str) = unpack "\@$i L! \@$i L!/a*", ${ $self->{'_packed'}[2] };
+        die "Failed to unpack control at index $i!" if !defined $str;
+
+        $i += Linux::Perl::MsgHdr::CMSG_ALIGN($len);
+
+        # shorten as needed so that we don't overshoot
+        substr( $str, $len - length( pack 'L!' ) ) = q<>;
 
         push @control, unpack 'i! i! a*', $str;
-
-        $i += Linux::Perl::MsgHdr::CMSG_ALIGN( length $str );
     }
 
     return \@control;
+}
+
+sub set_ioveclen {
+    $_[0]{'iovec'} = [ map { \("\0" x $_) } @_[ 1 .. $#_ ] ];
+
+    return $_[0];
+}
+
+sub set_controllen {
+    $_[0]{'control'} = [
+        map { ( 0, 0, "\0" x $_ ) } @_[ 1 .. $#_ ]
+    ];
+
+    return $_[0];
 }
 
 #----------------------------------------------------------------------

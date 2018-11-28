@@ -78,7 +78,7 @@ sub pack_control {
             $cmsg_len_w_padding = CMSG_ALIGN( length $ctrl_ar->[ 2 + 3 * $_ ] );
             pack(
                 "L! i! i! a$cmsg_len_w_padding",
-                CMSG_SPACE($cmsg_len_w_padding),
+                _sizeof_cmsghdr() + length $ctrl_ar->[ 2 + 3 * $_ ],
                 @{$ctrl_ar}[ 3 * $_, 1 + 3 * $_ ],
                 $ctrl_ar->[ 2 + 3 * $_ ],
             );
@@ -93,9 +93,9 @@ sub pack_msghdr {
 
     # We have to join() individual pack()s rather than doing one giant
     # pack() to avoid pack()ing pointers to temporary values.
-    my $iov_buf = $opts_hr->{'iov'} && join(
+    my $iov_buf = $opts_hr->{'iovec'} && join(
         q<>,
-        map { pack( _iovec(), $$_, length $$_) } @{ $opts_hr->{'iov'} },
+        map { pack( _iovec(), $$_, length $$_) } @{ $opts_hr->{'iovec'} },
     );
 
     return [
@@ -103,10 +103,10 @@ sub pack_msghdr {
             _msghdr(),
 
             $opts_hr->{'name'} && ${ $opts_hr->{'name'} },
-            defined($opts_hr->{'name'}) ? length(${ $opts_hr->{'name'} }) : 0,
+            defined($opts_hr->{'name'}) ? length( $opts_hr->{'name'} ) : 0,
 
             $iov_buf,
-            $opts_hr->{'iov'} ? 0 + @{ $opts_hr->{'iov'} } : 0,
+            $opts_hr->{'iovec'} ? 0 + @{ $opts_hr->{'iovec'} } : 0,
 
             $control,
             $control ? length( $control ) : 0,

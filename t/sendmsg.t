@@ -59,7 +59,7 @@ sub _do_tests {
         sub {
             $class->new(
                 iov => [ \'0' ],
-                control => [ Socket::SOL_SOCKET(), Socket::SCM_CREDENTIALS(), \pack( "I!*", $$, $>, (split m< >, $))[0] ) ],
+                control => [ Socket::SOL_SOCKET(), Socket::SCM_CREDENTIALS(), pack( "I!*", $$, $>, (split m< >, $))[0] ) ],
                 flags => ['NOSIGNAL'],
             )->sendmsg($yin);
         },
@@ -70,10 +70,35 @@ sub _do_tests {
         sub {
             $class->new(
                 iov => [ \'0' ],
-                control => [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), \pack( "I!*", fileno(\*STDOUT) ) ],
+                control => [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), pack( "I!*", fileno(\*STDOUT) ) ],
                 flags => ['NOSIGNAL'],
             )->sendmsg($yin);
         },
-        'sending SCM_RIGHTS',
+        'sending SCM_RIGHTS - one fd',
+    );
+
+    lives_ok(
+        sub {
+            $class->new(
+                iov => [ \'0' ],
+                control => [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), pack( "I!*", fileno(\*STDIN), fileno(\*STDOUT) ) ],
+                flags => ['NOSIGNAL'],
+            )->sendmsg($yin);
+        },
+        'sending SCM_RIGHTS - two fds in one message',
+    );
+
+    lives_ok(
+        sub {
+            $class->new(
+                iov => [ \'0' ],
+                control => [
+                    Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), pack( "I!*", fileno(\*STDIN) ),
+                    Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(), pack( "I!*", fileno(\*STDOUT) ),
+                ],
+                flags => ['NOSIGNAL'],
+            )->sendmsg($yin);
+        },
+        'sending SCM_RIGHTS - two fds in separate messages',
     );
 }

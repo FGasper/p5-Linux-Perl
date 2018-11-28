@@ -33,7 +33,7 @@ my $control_ar = [
 ];
 
 my $smsg = Linux::Perl::sendmsg->new(
-    iov => [ \$data1, \$data2 ],
+    iovec => [ \$data1, \$data2 ],
     control => $control_ar,
 );
 
@@ -42,20 +42,23 @@ $smsg->sendmsg($yin);
 setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
 
 my $rmsg = Linux::Perl::recvmsg->new(
-    iovlen => [ 1024 ],
+    ioveclen => [ 1024 ],
     controllen => [ 12 ],
 );
 
 my $bytes = $rmsg->recvmsg($yang);
 
+diag _rightdump( $rmsg );
+diag _rightdump( $rmsg->get_iovec() );
+
 is(
-    ${ ($rmsg->get_iovec())[0] },
+    ${ $rmsg->get_iovec()->[0] },
     join( q<>, 'a' .. 'z', 0 .. 9 ),
     'payload received',
 ) or diag _rightdump( $rmsg->get_iovec() );
 
 is_deeply(
-    [ $rmsg->get_control() ],
+    $rmsg->get_control(),
     [
         Socket::SOL_SOCKET(),
         Socket::SCM_CREDENTIALS(),
@@ -68,7 +71,7 @@ is_deeply(
 
 pipe my $r, my $w;
 
-$smsg->set_iov( \do { 'a' .. 'z' } );
+$smsg->set_iovec( \do { 'a' .. 'z' } );
 
 $smsg->set_control(
     Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(),
@@ -78,24 +81,37 @@ $smsg->set_control(
     pack( 'I!', fileno $w),
 );
 
+diag _rightdump($smsg);
 $smsg->sendmsg($yin);
 
-setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
-
-$rmsg->set_iovlen( 1024 );
+$rmsg->set_ioveclen( 1024 );
 $rmsg->set_controllen( 12, 12 );
 
-$bytes = $rmsg->recvmsg($yin);
+$bytes = $rmsg->recvmsg($yang);
 
-is_deeply(
-    [ ($rmsg->get_control())[0, 1, 4, 5] ],
-    [ Socket::SOL_SOCKET(), Socket::SCM_RIGHTS() ],
-    'control first two values',
-);
+my @passed_fds;
 
-my ($rfd, $wfd) = map { unpack 'I!', $_ } ($rmsg->get_control())[2, 6];
-open my $r2, '<&=', $rfd;
-open my $w2, '>&=', $wfd;
+my @control = @{ $rmsg->get_control() };
+while (@control) {
+    if ($control[1] == Socket::SCM_RIGHTS()) {
+        diag sprintf( 'Received SCM_RIGHTS: %v.02x', $control[2] );
+        push @passed_fds, unpack 'I!*', $control[2];
+    }
+    else {
+        diag sprintf( 'Received unexpected control: [ %d, %d, %v.02x ]', @control[0, 1, 2] );
+    }
+
+    splice( @control, 0, 3 );
+}
+
+is(
+    0 + @passed_fds,
+    2,
+    'two FDs passed',
+) or diag _rightdump( $rmsg->get_control() );
+
+open my $r2, '<&=', $passed_fds[0];
+open my $w2, '>&=', $passed_fds[1];
 
 is_deeply(
     [ stat $r2 ],
