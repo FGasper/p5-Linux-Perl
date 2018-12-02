@@ -33,9 +33,9 @@ use constant {
     _cmsghdr_unpack => q< x[L!] i! i! a* >,
 
     # buffer, length
-    _iovec => q< P L! >,
+    _iov => q< P L! >,
 
-    _iovec_lengths => q< x[P] L! >,
+    _iov_lengths => q< x[P] L! >,
 
     _sizelen => length( pack 'L!' ),
     _intlen  => length( pack 'i!' ),
@@ -56,7 +56,7 @@ sub shrink_opt_strings {
     }
 
     my @iov_lengths = unpack(
-        _iovec_lengths() x $iovlen,
+        _iov_lengths() x $iovlen,
         $$iov_buf_sr,
     );
 
@@ -93,9 +93,9 @@ sub pack_msghdr {
 
     # We have to join() individual pack()s rather than doing one giant
     # pack() to avoid pack()ing pointers to temporary values.
-    my $iov_buf = $opts_hr->{'iovec'} && join(
+    my $iov_buf = $opts_hr->{'iov'} && join(
         q<>,
-        map { pack( _iovec(), $$_, length $$_) } @{ $opts_hr->{'iovec'} },
+        map { pack( _iov(), $$_, length $$_) } @{ $opts_hr->{'iov'} },
     );
 
     return [
@@ -106,7 +106,7 @@ sub pack_msghdr {
             defined($opts_hr->{'name'}) ? length( $opts_hr->{'name'} ) : 0,
 
             $iov_buf,
-            $opts_hr->{'iovec'} ? 0 + @{ $opts_hr->{'iovec'} } : 0,
+            $opts_hr->{'iov'} ? 0 + @{ $opts_hr->{'iov'} } : 0,
 
             $control,
             $control ? length( $control ) : 0,

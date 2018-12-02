@@ -13,7 +13,7 @@ Linux::Perl::sendmsg
 
     my $msg = Linux::Perl::sendmsg->new(
         name => $name,
-        iovec => [ \$str1, \$str2, .. ],
+        iov => [ \$str1, \$str2, .. ],
         control => [ $level, $type, $data ],
         flags => \@flags,
     );
@@ -62,11 +62,11 @@ Returns an object instance.
 =item * C<name> - Plain string. Irrelevant for connected sockets;
 required otherwise.
 
-=item * C<iovec> - Optional, a reference to an array of string references.
+=item * C<iov> - Optional, a reference to an array of string references.
 
 =item * C<control> - Optional, a reference to an array of 1 or more of:
 ( $LEVEL, $TYPE, \$DATA ).  See below for examples. If you don’t use this
-or multiple string references in C<iovec>, you might as well use Perl’s
+or multiple string references in C<iov>, you might as well use Perl’s
 C<send()> built-in.
 
 =item * C<flags> - Optional, either of:
@@ -151,18 +151,18 @@ sub set_name {
     return $_[0];
 }
 
-=head2 $obj = I<OBJ>->set_iovec( \$STR1, \$STR2, .. )
+=head2 $obj = I<OBJ>->set_iov( \$STR1, \$STR2, .. )
 
 Sets the message’s payload.
 
 =cut
 
-sub set_iovec {
-    if ($_[0]->{'iovec'}) {
-        @{ $_[0]->{'iovec'} } = @_[1 .. $#_ ];
+sub set_iov {
+    if ($_[0]->{'iov'}) {
+        @{ $_[0]->{'iov'} } = @_[1 .. $#_ ];
     }
     else {
-        $_[0]->{'iovec'} = [ @_[1 .. $#_ ] ];
+        $_[0]->{'iov'} = [ @_[1 .. $#_ ] ];
     }
 
     return $_[0];

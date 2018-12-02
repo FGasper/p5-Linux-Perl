@@ -33,7 +33,7 @@ my $control_ar = [
 ];
 
 my $smsg = Linux::Perl::sendmsg->new(
-    iovec => [ \$data1, \$data2 ],
+    iov => [ \$data1, \$data2 ],
     control => $control_ar,
 );
 
@@ -42,20 +42,20 @@ $smsg->sendmsg($yin);
 setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
 
 my $rmsg = Linux::Perl::recvmsg->new(
-    ioveclen => [ 1024 ],
+    iovlen => [ 1024 ],
     controllen => [ 12 ],
 );
 
 my $bytes = $rmsg->recvmsg($yang);
 
 diag _rightdump( $rmsg );
-diag _rightdump( $rmsg->get_iovec() );
+diag _rightdump( $rmsg->get_iov() );
 
 is(
-    ${ $rmsg->get_iovec()->[0] },
+    ${ $rmsg->get_iov()->[0] },
     join( q<>, 'a' .. 'z', 0 .. 9 ),
     'payload received',
-) or diag _rightdump( $rmsg->get_iovec() );
+) or diag _rightdump( $rmsg->get_iov() );
 
 is_deeply(
     $rmsg->get_control(),
@@ -69,9 +69,11 @@ is_deeply(
 
 #----------------------------------------------------------------------
 
+#socketpair $yin, my $yang, Socket::AF_UNIX, Socket::SOCK_DGRAM, 0;
+
 pipe my $r, my $w;
 
-$smsg->set_iovec( \do { 'a' .. 'z' } );
+$smsg->set_iov( \do { 'a' .. 'z' } );
 
 $smsg->set_control(
     Socket::SOL_SOCKET(), Socket::SCM_RIGHTS(),
@@ -84,7 +86,7 @@ $smsg->set_control(
 diag _rightdump($smsg);
 $smsg->sendmsg($yin);
 
-$rmsg->set_ioveclen( 1024 );
+$rmsg->set_iovlen( 1024 );
 $rmsg->set_controllen( 12, 12 );
 
 $bytes = $rmsg->recvmsg($yang);
@@ -94,8 +96,8 @@ my @passed_fds;
 my @control = @{ $rmsg->get_control() };
 while (@control) {
     if ($control[1] == Socket::SCM_RIGHTS()) {
-        diag sprintf( 'Received SCM_RIGHTS: %v.02x', $control[2] );
         push @passed_fds, unpack 'I!*', $control[2];
+        diag sprintf( 'Received FDs: %v.02x', $control[2] );
     }
     else {
         diag sprintf( 'Received unexpected control: [ %d, %d, %v.02x ]', @control[0, 1, 2] );
@@ -132,5 +134,20 @@ is( $buf, 'a', 'send from original write to duplicated read' );
 syswrite( $w2, 'z' );
 sysread( $r, $buf, 1 );
 is( $buf, 'z', 'send from duplicated write to original read' );
+
+#----------------------------------------------------------------------
+
+socketpair $yin, $yang, Socket::AF_UNIX, Socket::SOCK_DGRAM, 0;
+
+setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
+
+syswrite( $yin, "\0" );
+
+$rmsg = Linux::Perl::recvmsg->new(
+    iovlen => [ 1024 ],
+    controllen => [ 12 ],
+);
+
+$bytes = $rmsg->recvmsg($yang);
 
 done_testing();

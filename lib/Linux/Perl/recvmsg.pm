@@ -13,7 +13,7 @@ Linux::Perl::recvmsg
 
     my $msg = Linux::Perl::recvmsg->new(
         namelen => 48,
-        ioveclen => [ 128, 256 ],
+        iovlen => [ 128, 256 ],
         controllen => [ 12, 48 ],
         flags => \@flags,   # or numeric
     );
@@ -24,7 +24,7 @@ Accessors, probably useful for after you’ve received a message:
 
     my $name = $msg->get_name();
 
-    my @iovec = $msg->get_iovec();
+    my @iov = $msg->get_iov();
 
     my @control = $msg->get_control();
 
@@ -34,7 +34,7 @@ Accessors, probably useful for after you’ve received a message:
 You can reuse the same message object to receive further messages:
 
     $msg->set_namelen(56);
-    $msg->set_ioveclen(200, 300);
+    $msg->set_iovlen(200, 300);
     $msg->set_controllen(20, 40);
 
     $msg->set_flag_names('CMSG_CLOEXEC', 'DONTWAIT');
@@ -98,7 +98,7 @@ Returns an instance of this class.
 
 =item * C<namelen> - Irrelevant for connected sockets; required otherwise.
 
-=item * C<ioveclen> - Optional, a reference to an array of
+=item * C<iovlen> - Optional, a reference to an array of
 string lengths.
 
 =item * C<control> - Optional, a reference to an array of control/ancillary
@@ -123,9 +123,9 @@ sub new {
 
     my $name = "\0" x (delete $opts{'namelen'} || 0);
 
-   my @iovec;
-   if ($opts{'ioveclen'}) {
-       @iovec = map { \("\0" x $_) } @{ delete $opts{'ioveclen'} };
+   my @iov;
+   if ($opts{'iovlen'}) {
+       @iov = map { \("\0" x $_) } @{ delete $opts{'iovlen'} };
    }
 
    my @control;
@@ -135,7 +135,7 @@ sub new {
 
     my %self = (
         name => $name,
-        iovec => \@iovec,
+        iov => \@iov,
         control => \@control,
         flags => $flags,
     );
@@ -178,7 +178,7 @@ print Dumper( $self, $packed_ar );
     my ($namelen, $iov_ct, $controllen) = unpack Linux::Perl::MsgHdr::_msghdr_lengths(), ${ $packed_ar->[0] };
 
     my @iov_lengths = unpack(
-        Linux::Perl::MsgHdr::_iovec_lengths() x $iov_ct,
+        Linux::Perl::MsgHdr::_iov_lengths() x $iov_ct,
         ${ $packed_ar->[1] },
     );
 
@@ -198,44 +198,44 @@ sub get_name {
     return substr( $_[0]->{'name'}, 0, $_[0]->{'_namelen'} );
 }
 
-#sub get_iovec {
+#sub get_iov {
 #    my ($self) = @_;
 #
-#    my @iovec;
+#    my @iov;
 #
 #    my $iov_lens = $self->{'_iov_lengths'};
 #
 #    for my $i ( 0 .. $#$iov_lens ) {
-#        if ($iov_lens->[$i] != length $self->{'iovec'}[$i]) {
-#            substr( $self->{'iovec'}[$i], $iov_lens->[$i] ) = q<>;
+#        if ($iov_lens->[$i] != length $self->{'iov'}[$i]) {
+#            substr( $self->{'iov'}[$i], $iov_lens->[$i] ) = q<>;
 #        }
 #
-#        push @iovec, \$self->{'iovec'}[$i];
+#        push @iov, \$self->{'iov'}[$i];
 #    }
 #
-#    return \@iovec;
+#    return \@iov;
 #}
 
-sub get_iovec {
+sub get_iov {
     my ($self) = @_;
 
-    my @iovec;
+    my @iov;
 
     my $bytes = $self->{'_got_bytes'};
 
     for my $i ( 0 .. $#{ $self->{'_iov_lengths'} } ) {
-        if ( length ${ $self->{'iovec'}[$i] } > $bytes ) {
-            push @iovec, \do { substr( ${ $self->{'iovec'}[$i] }, 0, $bytes ) };
+        if ( length ${ $self->{'iov'}[$i] } > $bytes ) {
+            push @iov, \do { substr( ${ $self->{'iov'}[$i] }, 0, $bytes ) };
             last;
         }
         else {
-            push @iovec, $self->{'iovec'}[$i];
+            push @iov, $self->{'iov'}[$i];
         }
 
-        $bytes -= length ${ $self->{'iovec'}[$i] };
+        $bytes -= length ${ $self->{'iov'}[$i] };
     }
 
-    return \@iovec;
+    return \@iov;
 }
 
 sub get_control {
@@ -263,8 +263,8 @@ printf "controllen: %d\npacked: %v.02x\n", $self->{'_controllen'}, ${ $self->{'_
     return \@control;
 }
 
-sub set_ioveclen {
-    $_[0]{'iovec'} = [ map { \("\0" x $_) } @_[ 1 .. $#_ ] ];
+sub set_iovlen {
+    $_[0]{'iov'} = [ map { \("\0" x $_) } @_[ 1 .. $#_ ] ];
 
     return $_[0];
 }
@@ -293,7 +293,7 @@ sub set_controllen {
     Linux::Perl::recvmsg->recvmsg(
         fd => fileno $fh,
         name => \$name,
-        iovec => [ \$main_data ],
+        iov => [ \$main_data ],
         control => [ \$control_data ],
         flags => [ 'DONTWAIT' ],
     );
