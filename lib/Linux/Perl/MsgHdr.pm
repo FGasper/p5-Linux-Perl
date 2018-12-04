@@ -41,32 +41,6 @@ use constant {
     _intlen  => length( pack 'i!' ),
 };
 
-# Tightly coupled to recvmsg.
-sub shrink_opt_strings {
-    my ($msghdr_sr, $iov_buf_sr, $control_sr, %opts) = @_;
-
-    my ($namelen, $iovlen, $controllen) = unpack _msghdr_lengths(), $$msghdr_sr;
-
-    if ($opts{'control'}) {
-        (@{ $opts{'control'} }[0, 1], ${ $opts{'control'}[2] } ) = unpack( _cmsghdr_unpack(), $$control_sr );
-    }
-
-    if ($opts{'name'}) {
-        substr( ${ $opts{'name'} }, $namelen ) = q<>;
-    }
-
-    my @iov_lengths = unpack(
-        _iov_lengths() x $iovlen,
-        $$iov_buf_sr,
-    );
-
-    for my $n ( 0 .. $#iov_lengths ) {
-        substr( ${ $opts{'iov'}[$n] }, $iov_lengths[$n] ) = q<>;
-    }
-
-    return;
-}
-
 my ($cmsg_len_w_padding, $ctrl_ar, $cmsg_datalen_plus_padding);
 
 sub pack_control {
@@ -103,7 +77,7 @@ sub pack_msghdr {
             _msghdr(),
 
             $opts_hr->{'name'} && ${ $opts_hr->{'name'} },
-            defined($opts_hr->{'name'}) ? length( $opts_hr->{'name'} ) : 0,
+            defined($opts_hr->{'name'}) ? length( ${ $opts_hr->{'name'} } ) : 0,
 
             $iov_buf,
             $opts_hr->{'iov'} ? 0 + @{ $opts_hr->{'iov'} } : 0,

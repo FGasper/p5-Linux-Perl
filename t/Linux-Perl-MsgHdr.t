@@ -18,12 +18,12 @@ sub _rightdump {
 
 my $cmsg = Linux::Perl::MsgHdr::pack_control( [ 1, 2, 'abcdef' ] );
 my $lvl_type_data = pack( 'i! i! a8', 1, 2, 'abcdef' );
-my $expected_cmsg = pack( 'L! a*', length(pack 'L!') + length($lvl_type_data), $lvl_type_data );
+my $expected_cmsg = pack( 'L! a*', length(pack 'L!') + length($lvl_type_data) - 2, $lvl_type_data );
 is(
     $cmsg,
     $expected_cmsg,
     'pack_control() - one value',
-) or diag _rightdump($cmsg);
+) or diag _rightdump([ $cmsg, $expected_cmsg ]);
 
 $cmsg = Linux::Perl::MsgHdr::pack_control( [ 1, 2, 'abcdef', 3, 4, 'ghijk' ] );
 
@@ -33,7 +33,7 @@ is(
     join(
         q<>,
         $expected_cmsg,
-        pack( 'L! a*', length(pack 'L!') + length($ltd2), $ltd2 ),
+        pack( 'L! a*', length(pack 'L!') + length($ltd2) - 3, $ltd2 ),
     ),
     'pack_control() - two values',
 ) or diag _rightdump($cmsg);
@@ -43,27 +43,31 @@ is(
 my %pack_opts = (
     name => \'123123',
     iov => [ \'abcdefg', \'hijklmnop' ],
-    control => [ -1, -2, \'3456789' ],
+    control => [ -1, -2, '3456789' ],
 );
 
-my $pieces_ar = Linux::Perl::MsgHdr::pack_msghdr(%pack_opts);
+my $pieces_ar = Linux::Perl::MsgHdr::pack_msghdr(\%pack_opts);
+
+my $main_pack = pack(
+    'P L! P L! P L! x[I!]',
+
+    ${ $pack_opts{'name'} },
+    length ${ $pack_opts{'name'} },
+
+    ${ $pieces_ar->[1] },
+    0 + @{ $pack_opts{'iov'} },
+
+    ${ $pieces_ar->[2] },
+
+    # The total length of the control segment, including padding.
+    length( pack 'L!i!i!' ) + length($pack_opts{'control'}[2]) + 1,
+);
 
 is(
     ${ $pieces_ar->[0] },
-    pack(
-        'P L! P L! P L! x[I!]',
-
-        ${ $pack_opts{'name'} },
-        length ${ $pack_opts{'name'} },
-
-        ${ $pieces_ar->[1] },
-        0 + @{ $pack_opts{'iov'} },
-
-        ${ $pieces_ar->[2] },
-        length( pack 'L!i!i!' ) + length ${ $pack_opts{'control'}[2] },
-    ),
+    $main_pack,
     'main msghdr pack',
-);
+) or diag _rightdump( [ ${ $pieces_ar->[0] }, $main_pack ] );
 
 is(
     ${ $pieces_ar->[1] },
@@ -79,41 +83,23 @@ is(
     'iov pack',
 );
 
+my $ctrl_pack = pack(
+    'L! i! i! a* x![I!]',
+
+    # The length of the first message, minus end-padding.
+    length( pack 'L!i!i!' ) + length($pack_opts{'control'}[2]),
+
+    @{ $pack_opts{'control'} }[ 0, 1 ],
+    $pack_opts{'control'}[2],
+);
+
 is(
     ${ $pieces_ar->[2] },
-    pack(
-        'L! i! i!',
-        length( pack 'L!i!i!' ) + length ${ $pack_opts{'control'}[2] },
-        @{ $pack_opts{'control'} }[ 0, 1 ],
-    ) . ${ $pack_opts{'control'}[2] },
+    $ctrl_pack,
     'control pack',
-);
+) or diag _rightdump( ${ $pieces_ar->[2] }, $ctrl_pack );
 
 #----------------------------------------------------------------------
-
-my %shrink_opts = (
-    name => \do { my $v = "\0" x 256 },
-    iov => [ \do { my $v = "\0" x 12 }, \do { my $v = "\0" x 200 } ],
-    control => [ 0, 0, \do { my $v = "\0" x 256 } ],
-);
-
-Linux::Perl::MsgHdr::shrink_opt_strings(
-    @$pieces_ar,
-    %shrink_opts,
-);
-
-cmp_deeply(
-    \%shrink_opts,
-    {
-        name => \do { "\0" x length ${ $pack_opts{'name'} } },
-        iov => [
-            \do { "\0" x length ${ $pack_opts{'iov'}[0] } },
-            \do { "\0" x length ${ $pack_opts{'iov'}[1] } },
-        ],
-        control => [ -1, -2, \'3456789' ],
-    },
-    'shrink_opt_strings shrinks iov & name and restores control data as expected',
-);
 
 done_testing();
 
