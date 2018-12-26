@@ -145,11 +145,12 @@ sub new {
 
 #----------------------------------------------------------------------
 
-=head2 $bytes = I<CLASS>->recvmsg( $FD_OR_FH )
+=head2 $bytes = I<OBJ>->recvmsg( $FD_OR_FH )
 
 Attempts to receive a message.
 
-If EAGAIN/EWOULDBLOCK is encountered, undef is returned.
+If EAGAIN/EWOULDBLOCK is encountered, undef is returned; any other
+error prompts an exception.
 
 =cut
 
@@ -158,11 +159,8 @@ sub recvmsg {
     my ($self, $fd) = @_;
 
     $fd = fileno $fd if ref $fd;
-use Data::Dumper;
-$Data::Dumper::Useqq = 1;
 
     my $packed_ar = Linux::Perl::MsgHdr::pack_msghdr($self);
-print Dumper( $self, $packed_ar );
 
     local @Linux::Perl::_TOLERATE_ERRNO = ( _EAGAIN() );
 
@@ -184,37 +182,31 @@ print Dumper( $self, $packed_ar );
 
     @{$self}{'_namelen', '_iov_lengths', '_controllen', '_packed', '_got_bytes'} = ($namelen, \@iov_lengths, $controllen, $packed_ar, $bytes);
 
-#    Linux::Perl::MsgHdr::shrink_opt_strings(
-#        @$packed_ar,
-#        %opts,
-#    );
-
     return $bytes;
 }
 
 #----------------------------------------------------------------------
 
+=head2 $name = I<OBJ>->get_name()
+
+Returns the name component of the received message.
+
+=cut
+
 sub get_name {
     return substr( $_[0]->{'name'}, 0, $_[0]->{'_namelen'} );
 }
 
-#sub get_iov {
-#    my ($self) = @_;
-#
-#    my @iov;
-#
-#    my $iov_lens = $self->{'_iov_lengths'};
-#
-#    for my $i ( 0 .. $#$iov_lens ) {
-#        if ($iov_lens->[$i] != length $self->{'iov'}[$i]) {
-#            substr( $self->{'iov'}[$i], $iov_lens->[$i] ) = q<>;
-#        }
-#
-#        push @iov, \$self->{'iov'}[$i];
-#    }
-#
-#    return \@iov;
-#}
+#----------------------------------------------------------------------
+
+=head2 $iov_ar = I<OBJ>->get_iov()
+
+Returns a reference to an array of string references that represent the
+last-received payload. The references may
+or may not be the actual object internals; callers are expected to copy
+the strings before changing them!
+
+=cut
 
 sub get_iov {
     my ($self) = @_;
@@ -233,10 +225,22 @@ sub get_iov {
         }
 
         $bytes -= length ${ $self->{'iov'}[$i] };
+
+        # Prevent a final empty string.
+        last if $bytes == 0;
     }
 
     return \@iov;
 }
+
+#----------------------------------------------------------------------
+
+=head2 $ctrl_ar = I<OBJ>->get_control()
+
+Returns the control/ancillary elements of the message as a reference
+to an array of 3-element groups: ( $level, $type, $data ).
+
+=cut
 
 sub get_control {
     my ($self) = @_;
@@ -261,6 +265,12 @@ printf "controllen: %d\npacked: %v.02x\n", $self->{'_controllen'}, ${ $self->{'_
     }
 
     return \@control;
+}
+
+#----------------------------------------------------------------------
+
+sub set_namelen {
+    die 'TODO';
 }
 
 sub set_iovlen {
@@ -290,13 +300,14 @@ sub set_controllen {
     # Can receive up to 256 bytes of payload
     # and 48 bytes of control data. We receive
     # a name that can be up to 256 bytes long.
-    Linux::Perl::recvmsg->recvmsg(
-        fd => fileno $fh,
-        name => \$name,
-        iov => [ \$main_data ],
-        control => [ \$control_data ],
+    my $msg = Linux::Perl::recvmsg->new(
+        namelen => 256,
+        iovlen => [ 256 ],
+        controllen => 48,
         flags => [ 'DONTWAIT' ],
     );
+
+    my $bytes = $msg->recvmsg( $fh );
 
 =head1 SEE ALSO
 
