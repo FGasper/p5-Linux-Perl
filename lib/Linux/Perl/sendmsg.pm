@@ -117,9 +117,6 @@ sub sendmsg {
     local @Linux::Perl::_TOLERATE_ERRNO = ( _EAGAIN() );
 
     my $packed_ar = Linux::Perl::MsgHdr::pack_msghdr($self);
-use Data::Dumper;
-$Data::Dumper::Useqq = 1;
-print Dumper( $self, $packed_ar );
 
     my $ret = Linux::Perl::call(
         $self->NR_sendmsg(),

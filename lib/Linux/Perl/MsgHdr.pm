@@ -76,8 +76,8 @@ sub pack_msghdr {
         \pack(
             _msghdr(),
 
-            $opts_hr->{'name'} && ${ $opts_hr->{'name'} },
-            defined($opts_hr->{'name'}) ? length( ${ $opts_hr->{'name'} } ) : 0,
+            defined($opts_hr->{'name'}) ? $opts_hr->{'name'} : q<>,
+            defined($opts_hr->{'name'}) ? length( $opts_hr->{'name'} ) : 0,
 
             $iov_buf,
             $opts_hr->{'iov'} ? 0 + @{ $opts_hr->{'iov'} } : 0,

@@ -36,8 +36,9 @@ my $smsg = Linux::Perl::sendmsg->new(
     iov => [ \$data1, \$data2 ],
     control => $control_ar,
 );
-
 $smsg->sendmsg($yin);
+
+#diag explain $smsg;
 
 setsockopt( $yang, Socket::SOL_SOCKET(), Socket::SO_PASSCRED(), 1 );
 
@@ -48,8 +49,8 @@ my $rmsg = Linux::Perl::recvmsg->new(
 
 my $bytes = $rmsg->recvmsg($yang);
 
-diag _rightdump( $rmsg );
-diag _rightdump( $rmsg->get_iov() );
+#diag _rightdump( $rmsg );
+#diag _rightdump( $rmsg->get_iov() );
 
 is(
     ${ $rmsg->get_iov()->[0] },
@@ -83,7 +84,7 @@ $smsg->set_control(
     pack( 'I!', fileno $w),
 );
 
-diag _rightdump($smsg);
+#diag _rightdump($smsg);
 $smsg->sendmsg($yin);
 
 $rmsg->set_iovlen( 1024 );
@@ -97,9 +98,9 @@ my @control = @{ $rmsg->get_control() };
 while (@control) {
     if ($control[1] == Socket::SCM_RIGHTS()) {
         push @passed_fds, unpack 'I!*', $control[2];
-        diag sprintf( 'Received FDs: %v.02x', $control[2] );
+        #diag sprintf( 'Received FDs: %v.02x', $control[2] );
     }
-    else {
+    elsif ($control[1] != Socket::SCM_CREDENTIALS()) {
         diag sprintf( 'Received unexpected control: [ %d, %d, %v.02x ]', @control[0, 1, 2] );
     }
 

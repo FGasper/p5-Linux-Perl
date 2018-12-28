@@ -249,7 +249,6 @@ sub get_control {
 
     my $i = 0;
     while ($i < $self->{'_controllen'}) {
-printf "controllen: %d\npacked: %v.02x\n", $self->{'_controllen'}, ${ $self->{'_packed'}[2] };
 
         # $len is inclusive of its own encoding.
         # $str overshoots by the length of $len's encoding.
