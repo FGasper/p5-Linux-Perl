@@ -30,7 +30,10 @@ use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::EasyPack;
 use Linux::Perl::ParseFlags;
 
-use parent 'Linux::Perl::Base';
+use parent (
+    'Linux::Perl::Base',
+    'Linux::Perl::Base::Fileno',
+);
 
 *_flag_CLOEXEC = \*Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
 *_flag_NONBLOCK = \*Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
@@ -213,16 +216,6 @@ sub add {
         0 + $events_mask,
     );
 }
-
-#----------------------------------------------------------------------
-
-=head2 I<OBJ>->fileno()
-
-Returns the inotify instance’s file descriptor number.
-
-=cut
-
-sub fileno { return $_[0][0] }
 
 #----------------------------------------------------------------------
 

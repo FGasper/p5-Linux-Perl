@@ -16,25 +16,16 @@ similar logic to implement. This base class contains that logic.
 
 =cut
 
-use parent qw( Linux::Perl::Base::BitsTest );
+use parent qw(
+    Linux::Perl::Base::BitsTest
+    Linux::Perl::Base::Fileno
+);
 
 use Linux::Perl::Constants::Fcntl;
 use Linux::Perl::Endian;
 
 *_flag_CLOEXEC = \*Linux::Perl::Constants::Fcntl::flag_CLOEXEC;
 *_flag_NONBLOCK = \*Linux::Perl::Constants::Fcntl::flag_NONBLOCK;
-
-#----------------------------------------------------------------------
-
-=head1 METHODS
-
-=head2 I<OBJ>->fileno()
-
-Returns the file descriptor number.
-
-=cut
-
-sub fileno { fileno $_[0][0] }
 
 #----------------------------------------------------------------------
 
