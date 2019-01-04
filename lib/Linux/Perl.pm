@@ -73,7 +73,11 @@ Each family of system calls lives in its own namespace under C<Linux::Perl>:
 
 =item * L<Linux::Perl::sendmsg>
 
+=item * L<Linux::Perl::recvmsg>
+
 =item * L<Linux::Perl::prlimit>
+
+=item * L<Linux::Perl::fanotify>
 
 =back
 
