@@ -41,7 +41,7 @@ is(
 #----------------------------------------------------------------------
 
 my %pack_opts = (
-    name => \'123123',
+    name => '123123',
     iov => [ \'abcdefg', \'hijklmnop' ],
     control => [ -1, -2, '3456789' ],
 );
@@ -51,8 +51,8 @@ my $pieces_ar = Linux::Perl::MsgHdr::pack_msghdr(\%pack_opts);
 my $main_pack = pack(
     'P L! P L! P L! x[I!]',
 
-    ${ $pack_opts{'name'} },
-    length ${ $pack_opts{'name'} },
+    $pack_opts{'name'},
+    length $pack_opts{'name'},
 
     ${ $pieces_ar->[1] },
     0 + @{ $pack_opts{'iov'} },
