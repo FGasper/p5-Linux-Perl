@@ -13,7 +13,6 @@ use Linux::Perl::sendmsg;
 use Linux::Perl::recvmsg;
 
 use Socket;
-use Carp::Always;
 
 sub _rightdump {
     local $Data::Dumper::Useqq = 1;
