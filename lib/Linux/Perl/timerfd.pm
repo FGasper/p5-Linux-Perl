@@ -108,7 +108,7 @@ sub new {
 
     open my $fh, '+<&=' . $fd;
 
-    return bless [$fh], $arch_module;
+    return bless [$fd, $fh], $arch_module;
 }
 
 #----------------------------------------------------------------------
@@ -224,7 +224,7 @@ sub set_ticks {
     }
 
     local $!;
-    return 1 if ioctl( $self->[0], _TFD_IOC_SET_TICKS(), $buf );
+    return 1 if ioctl( $self->[1], _TFD_IOC_SET_TICKS(), $buf );
 
     return !1 if $! == _ENOTTY();   #falsy
 
