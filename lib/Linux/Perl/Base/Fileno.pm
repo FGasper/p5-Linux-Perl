@@ -11,6 +11,6 @@ Returns the file descriptor number.
 
 =cut
 
-sub fileno { fileno $_[0][0] }
+sub fileno { $_[0][0] }
 
 1;

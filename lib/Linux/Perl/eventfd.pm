@@ -99,7 +99,7 @@ sub new {
 
     open my $fh, '+<&=' . $fd;
 
-    return bless [$fh], $arch_module;
+    return bless [$fd, $fh], $arch_module;
 }
 
 #----------------------------------------------------------------------
@@ -134,7 +134,7 @@ sub add {
         $packed = pack 'Vx4', $_[1];
     }
 
-    return syswrite( $_[0][0], $packed ) && 1;
+    return syswrite( $_[0][1], $packed ) && 1;
 }
 
 1;

@@ -30,7 +30,7 @@ use Linux::Perl::Endian;
 #----------------------------------------------------------------------
 
 sub _read {
-    return undef if !sysread $_[0][0], my $buf, 8;
+    return undef if !sysread $_[0][1], my $buf, 8;
 
     return _parse64($buf);
 }
