@@ -35,7 +35,10 @@ Linux::Perl::mq - POSIX message queue
 
 =cut
 
-use parent 'Linux::Perl::Base';
+use parent (
+    'Linux::Perl::Base',
+    'Linux::Perl::Base::Fileno',
+);
 
 use Linux::Perl;
 use Linux::Perl::EasyPack;
@@ -73,6 +76,9 @@ BEGIN {
 #----------------------------------------------------------------------
 
 =head1 METHODS
+
+This class subclasses L<Linux::Perl::Base::Fileno>. Additional
+supported methods are:
 
 =head2 I<CLASS>->unlink( $NAME )
 
@@ -209,17 +215,6 @@ sub _new {
 
     return bless [ $mqd, $mqfh ], $arch_module;
 }
-
-#----------------------------------------------------------------------
-
-=head2 I<OBJ>->fileno()
-
-Returns the file descriptor number. This is useful, e.g., for use with
-select, L<epoll|Linux::Perl::epoll>, or poll.
-
-=cut
-
-sub fileno { fileno $_[0][0] }
 
 #----------------------------------------------------------------------
 

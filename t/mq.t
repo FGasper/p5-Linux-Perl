@@ -67,7 +67,7 @@ sub _do_tests {
     );
 
     #my $fileno = fileno $mq;
-    my $fileno = $mq->[0];
+    my $fileno = $mq->fileno();
 
     like(
         CORE::readlink("/proc/$$/fd/$fileno"),
